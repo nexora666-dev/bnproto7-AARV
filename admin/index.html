@@ -681,7 +681,9 @@ const DEFAULT_DATA=[
 /* ── Supabase ── */
 const SUPABASE_URL = 'https://hcgangjurvsisqdrwkqo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2FuZ2p1cnZzaXNxZHJ3a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMjA4ODMsImV4cCI6MjEwMTU5Njg4M30.Ipq0PSp2dbRVA9Ik8xQtscozPL4qz9rGoCS6NaFmHu8';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Supabase v2 CDN exposes { createClient } on window.supabase
+const { createClient } = window.supabase;
+const _db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ── State ── */
 let menuData = [];
@@ -690,29 +692,34 @@ let selectedItems = new Set();
 
 async function loadData(){
   try {
-    const { data, error } = await supabase.from('global_menu').select('data').eq('id', 1).single();
-    if (error) throw error;
+    const { data, error } = await _db.from('global_menu').select('data').eq('id', 1).single();
+    if (error) throw new Error(error.message);
     if (data && Array.isArray(data.data) && data.data.length > 0) {
       menuData = data.data;
       return;
     }
+    // Table row exists but is empty — seed defaults
+    menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    const { error: upsertErr } = await _db.from('global_menu').upsert({ id: 1, data: menuData });
+    if (upsertErr) throw new Error('Seed failed: ' + upsertErr.message);
   } catch(e){
-    console.warn('Supabase load failed, using defaults:', e.message);
+    console.error('Supabase error:', e.message);
+    document.getElementById('sidebar').innerHTML += `<div style="color:red;padding:12px;font-size:0.8rem;">DB Error: ${e.message}</div>`;
+    menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
   }
-  // Fallback: load defaults and push them to Supabase
-  menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-  await supabase.from('global_menu').upsert({ id: 1, data: menuData });
 }
 
 async function saveData(){
   menuData.forEach(cat => {
     if(cat.rows) cat.count = cat.rows.length + ' Items';
   });
-  const { error } = await supabase.from('global_menu').upsert({ id: 1, data: menuData });
+  const { error } = await _db.from('global_menu').upsert({ id: 1, data: menuData });
   if (error) {
     showToast('Save failed: ' + error.message, 'error');
     console.error('Supabase save error:', error);
+    return false;
   }
+  return true;
 }
 
 function getRows(cat){
