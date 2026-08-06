@@ -1608,31 +1608,35 @@ function openDishPopup(name, price, diet, portion, desc, img){
   
   const dishPhotoArea = document.getElementById('dishPhotoArea');
   if(img) {
-    dishPhotoArea.innerHTML = `<img src="${img}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
-    dishPhotoArea.style.background = 'transparent';
+    dishPhotoArea.innerHTML = `
+      <img
+        src="${img}"
+        alt="${name}"
+        style="width:100%;height:100%;object-fit:contain;border-radius:14px;cursor:zoom-in;background:#1a1a1a;"
+        title="Tap to view full size"
+        onclick="openFullImg('${img}')"
+      >`;
+    dishPhotoArea.style.background = '#1a1a1a';
+    dishPhotoArea.style.borderRadius = '14px';
   } else {
     dishPhotoArea.innerHTML = `<svg viewBox="0 0 100 100" class="dish-cloche-svg" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
         <!-- Steam lines -->
         <path class="steam steam-1" d="M42 20 Q44 15 42 10" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
         <path class="steam steam-2" d="M50 18 Q52 12 50 7" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
         <path class="steam steam-3" d="M58 20 Q60 15 58 10" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        
         <!-- Cloche Handle -->
         <circle cx="50" cy="24" r="3.5" stroke-width="2"/>
-        
         <!-- Cloche Dome -->
         <path d="M22 56 C22 34 32 28 50 28 C68 28 78 34 78 56" stroke-width="2" stroke-linecap="round"/>
-        
         <!-- Cloche Base -->
         <path d="M16 56 L84 56 C86.2 56 88 57.8 88 60 L88 62 L12 62 L12 60 C12 57.8 13.8 56 16 56 Z" stroke-width="2" stroke-linejoin="round"/>
-        
         <!-- Plate Line -->
         <path d="M24 62 L76 62" stroke-width="2"/>
-        
         <!-- Subtle shadow -->
         <ellipse cx="50" cy="74" rx="34" ry="4" fill="currentColor" fill-opacity="0.06" stroke="none"/>
       </svg>`;
     dishPhotoArea.style.background = '';
+    dishPhotoArea.style.borderRadius = '';
   }
 
   dishOverlay.classList.add('on');
@@ -1642,10 +1646,36 @@ function closeDishPopup(){
   dishOverlay.classList.remove('on');
 }
 
+/* Fullscreen image lightbox */
+function openFullImg(src) {
+  let lb = document.getElementById('imgLightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'imgLightbox';
+    lb.style.cssText = `
+      position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);
+      display:flex;align-items:center;justify-content:center;cursor:zoom-out;
+      opacity:0;transition:opacity 0.2s ease;
+    `;
+    lb.innerHTML = `<img id="imgLightboxImg" style="max-width:95vw;max-height:90vh;object-fit:contain;border-radius:10px;box-shadow:0 0 60px rgba(0,0,0,0.8);">
+      <button onclick="closeFullImg()" style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.4rem;cursor:pointer;backdrop-filter:blur(4px);">✕</button>`;
+    lb.addEventListener('click', (e) => { if (e.target === lb) closeFullImg(); });
+    document.body.appendChild(lb);
+  }
+  document.getElementById('imgLightboxImg').src = src;
+  lb.style.display = 'flex';
+  requestAnimationFrame(() => lb.style.opacity = '1');
+}
+function closeFullImg() {
+  const lb = document.getElementById('imgLightbox');
+  if (lb) { lb.style.opacity = '0'; setTimeout(() => lb.style.display = 'none', 200); }
+}
+
 /* ESC key handling */
 document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape'){
-    if(dishOverlay.classList.contains('on')) closeDishPopup();
+    if(document.getElementById('imgLightbox')?.style.display === 'flex') closeFullImg();
+    else if(dishOverlay.classList.contains('on')) closeDishPopup();
     else if(OL.classList.contains('on')) closeCategoryModal();
   }
 });
