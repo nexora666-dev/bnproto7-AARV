@@ -768,9 +768,10 @@ function buildContent(){
   const rows = getRows(cat);
   const header = document.getElementById('contentHeader');
   header.innerHTML = `
-    <div>
-      <div class="content-title">${cat.name}</div>
-      <div class="content-sub">${cat.sub} · ${rows.length} items</div>
+    <div style="flex:1; max-width:400px; display:flex; flex-direction:column; gap:8px;">
+      <input type="text" id="editCatName" value="${escHtml(cat.name)}" class="field-input" style="font-family:var(--serif); font-size:1.8rem; font-weight:600; padding:4px 8px; border:1px solid transparent; background:transparent; width:100%; border-bottom:1px solid var(--beige-dark);" placeholder="Category Name">
+      <input type="text" id="editCatSub" value="${escHtml(cat.sub || '')}" class="field-input" style="font-size:0.85rem; color:var(--text-light); padding:4px 8px; border:1px solid transparent; background:transparent; width:100%; border-bottom:1px solid var(--beige-dark);" placeholder="Category Subtitle">
+      <div style="font-size:0.75rem; color:var(--text-muted); padding-left:8px;">${rows.length} items (Changes to category details auto-save)</div>
     </div>
     <div class="toolbar">
       <button class="tool-btn" id="btnAddItem">
@@ -787,6 +788,17 @@ function buildContent(){
       </button>
     </div>
   `;
+
+  document.getElementById('editCatName').addEventListener('change', (e) => {
+    cat.name = e.target.value;
+    saveData();
+    buildSidebar();
+  });
+
+  document.getElementById('editCatSub').addEventListener('change', (e) => {
+    cat.sub = e.target.value;
+    saveData();
+  });
 
   document.getElementById('btnAddItem').addEventListener('click', ()=>{
     const newRows = getRows(cat);
