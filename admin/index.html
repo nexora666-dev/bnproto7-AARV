@@ -1137,6 +1137,7 @@ function buildContent(){
     const idx = parseInt(el.dataset.idx);
     const r = getRows(cat);
     if(r[idx]) r[idx][el.dataset.field] = el.value;
+    setRows(cat, r); // apply changes to hero items
     debouncedSave(); // auto-save every rename/price/desc change
   });
 
@@ -1154,6 +1155,7 @@ function buildContent(){
       const idx = parseInt(el.dataset.idx);
       const r = getRows(cat);
       if(r[idx]) r[idx].d = el.value;
+      setRows(cat, r);
       saveData().then(() => showToast('Diet updated'));
       return;
     }
@@ -1196,6 +1198,7 @@ function buildContent(){
 
           const r = getRows(cat);
           if(r[idx]) r[idx].img = compressedBase64;
+          setRows(cat, r);
           
           showToast('Saving optimized photo...');
           try {
