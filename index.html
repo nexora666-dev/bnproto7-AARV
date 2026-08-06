@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   /* ── PALETTE ─────────────────────────── */
@@ -1283,13 +1284,20 @@ let D=[
      {n:"White Bread",p:"₹33",d:"v",desc:"Freshly baked soft white bread loaf."}
    ]}
 ];
-// Override menu data with stored admin changes if present
-const storedMenu = localStorage.getItem('menuData');
-if (storedMenu) {
+// Supabase config
+const SUPABASE_URL = 'https://hcgangjurvsisqdrwkqo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2FuZ2p1cnZzaXNxZHJ3a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMjA4ODMsImV4cCI6MjEwMTU5Njg4M30.Ipq0PSp2dbRVA9Ik8xQtscozPL4qz9rGoCS6NaFmHu8';
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadMenuFromSupabase() {
   try {
-    D = JSON.parse(storedMenu);
-  } catch (e) {
-    console.error('Failed to parse stored menu data', e);
+    const { data, error } = await _supabase.from('global_menu').select('data').eq('id', 1).single();
+    if (error) throw error;
+    if (data && Array.isArray(data.data) && data.data.length > 0) {
+      D = data.data;
+    }
+  } catch(e) {
+    console.warn('Could not load menu from Supabase, using defaults:', e.message);
   }
 }
 
@@ -1495,7 +1503,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* INIT */
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadMenuFromSupabase();
   buildPills();
   buildBento();
 });

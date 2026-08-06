@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --teal: #197771;
@@ -677,27 +678,41 @@ const DEFAULT_DATA=[
    ]}
 ];
 
+/* ── Supabase ── */
+const SUPABASE_URL = 'https://hcgangjurvsisqdrwkqo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2FuZ2p1cnZzaXNxZHJ3a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMjA4ODMsImV4cCI6MjEwMTU5Njg4M30.Ipq0PSp2dbRVA9Ik8xQtscozPL4qz9rGoCS6NaFmHu8';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 /* ── State ── */
 let menuData = [];
 let activeCatId = null;
-let selectedItems = new Set(); // indices of selected items in active category
+let selectedItems = new Set();
 
-function loadData(){
-  const stored = localStorage.getItem('menuData');
-  if(stored){
-    try { menuData = JSON.parse(stored); return; } catch(e){}
+async function loadData(){
+  try {
+    const { data, error } = await supabase.from('global_menu').select('data').eq('id', 1).single();
+    if (error) throw error;
+    if (data && Array.isArray(data.data) && data.data.length > 0) {
+      menuData = data.data;
+      return;
+    }
+  } catch(e){
+    console.warn('Supabase load failed, using defaults:', e.message);
   }
+  // Fallback: load defaults and push them to Supabase
   menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  await supabase.from('global_menu').upsert({ id: 1, data: menuData });
 }
 
-function saveData(){
-  // auto-update count fields
+async function saveData(){
   menuData.forEach(cat => {
-    if(cat.rows){
-      cat.count = cat.rows.length + ' Items';
-    }
+    if(cat.rows) cat.count = cat.rows.length + ' Items';
   });
-  localStorage.setItem('menuData', JSON.stringify(menuData));
+  const { error } = await supabase.from('global_menu').upsert({ id: 1, data: menuData });
+  if (error) {
+    showToast('Save failed: ' + error.message, 'error');
+    console.error('Supabase save error:', error);
+  }
 }
 
 function getRows(cat){
@@ -740,7 +755,7 @@ function buildSidebar(){
   addBtn.className = 'cat-item';
   addBtn.style = 'justify-content: center; color: var(--primary); font-weight: bold; border-top: 1px solid var(--beige-warm); margin-top: 10px; padding-top: 15px;';
   addBtn.innerHTML = `<span>+ Add Category</span>`;
-  addBtn.addEventListener('click', () => {
+  addBtn.addEventListener('click', async () => {
     const name = prompt("Enter new category name:");
     if(!name || !name.trim()) return;
     const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -755,8 +770,8 @@ function buildSidebar(){
     activeCatId = id;
     buildSidebar();
     buildContent();
-    saveData();
-    showToast("Category created");
+    await saveData();
+    showToast("Category created & synced!");
   });
   sb.appendChild(addBtn);
 }
@@ -771,13 +786,8 @@ function buildContent(){
     <div style="flex:1; max-width:400px; display:flex; flex-direction:column; gap:8px;">
       <input type="text" id="editCatName" value="${escHtml(cat.name)}" class="field-input" style="font-family:var(--serif); font-size:1.8rem; font-weight:600; padding:4px 8px; border:1px solid transparent; background:transparent; width:100%; border-bottom:1px solid var(--beige-dark);" placeholder="Category Name">
       <input type="text" id="editCatSub" value="${escHtml(cat.sub || '')}" class="field-input" style="font-size:0.85rem; color:var(--text-light); padding:4px 8px; border:1px solid transparent; background:transparent; width:100%; border-bottom:1px solid var(--beige-dark);" placeholder="Category Subtitle">
-      <div style="font-size:0.75rem; color:var(--text-muted); padding-left:8px;">${rows.length} items (Changes to category details auto-save)</div>
     </div>
     <div class="toolbar">
-      <button class="tool-btn" id="btnGenerateDB" style="background:var(--primary); color:white; border:none; font-weight:bold;">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        Generate Global DB
-      </button>
       <button class="tool-btn" id="btnAddItem">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Add Item
@@ -793,34 +803,15 @@ function buildContent(){
     </div>
   `;
 
-  document.getElementById('btnGenerateDB').addEventListener('click', async () => {
-    try {
-      showToast("Generating free database...", "success");
-      const res = await fetch('https://api.npoint.io/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ menu: menuData })
-      });
-      const data = await res.json();
-      if(data && data.id) {
-        prompt("SUCCESS! Here is your free Database ID. Copy it and paste it to the AI assistant:", data.id);
-      } else {
-        alert("Failed to generate database. API returned: " + JSON.stringify(data));
-      }
-    } catch (e) {
-      alert("Error creating database: " + e.message);
-    }
-  });
-
-  document.getElementById('editCatName').addEventListener('change', (e) => {
+  document.getElementById('editCatName').addEventListener('change', async (e) => {
     cat.name = e.target.value;
-    saveData();
+    await saveData();
     buildSidebar();
   });
 
-  document.getElementById('editCatSub').addEventListener('change', (e) => {
+  document.getElementById('editCatSub').addEventListener('change', async (e) => {
     cat.sub = e.target.value;
-    saveData();
+    await saveData();
   });
 
   document.getElementById('btnAddItem').addEventListener('click', ()=>{
@@ -1040,19 +1031,19 @@ document.getElementById('moveModalClose').addEventListener('click', closeMoveMod
 document.getElementById('moveModal').addEventListener('click', e => { if(e.target === e.currentTarget) closeMoveModal(); });
 
 /* ── Save / Reset ── */
-document.getElementById('saveBtn').addEventListener('click', ()=>{
-  saveData();
-  showToast('✓ All changes saved!');
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  await saveData();
+  showToast('✓ Saved & synced globally!');
 });
-document.getElementById('resetBtn').addEventListener('click', ()=>{
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
   if(!confirm('Reset ALL menu data to the original defaults? This cannot be undone.')) return;
-  localStorage.removeItem('menuData');
   menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  await saveData();
   activeCatId = menuData[0].id;
   selectedItems.clear();
   buildSidebar();
   buildContent();
-  showToast('Menu reset to defaults');
+  showToast('Menu reset & synced globally');
 });
 
 /* ── ESC Key ── */
@@ -1061,10 +1052,12 @@ document.addEventListener('keydown', e => {
 });
 
 /* ── Init ── */
-loadData();
-activeCatId = menuData[0]?.id || null;
-buildSidebar();
-buildContent();
+(async () => {
+  await loadData();
+  activeCatId = menuData[0]?.id || null;
+  buildSidebar();
+  buildContent();
+})();
 </script>
 </body>
 </html>
