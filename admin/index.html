@@ -735,6 +735,29 @@ function buildSidebar(){
     el.addEventListener('click', ()=>{ activeCatId = cat.id; selectedItems.clear(); buildSidebar(); buildContent(); });
     sb.appendChild(el);
   });
+  
+  const addBtn = document.createElement('div');
+  addBtn.className = 'cat-item';
+  addBtn.style = 'justify-content: center; color: var(--primary); font-weight: bold; border-top: 1px solid var(--beige-warm); margin-top: 10px; padding-top: 15px;';
+  addBtn.innerHTML = `<span>+ Add Category</span>`;
+  addBtn.addEventListener('click', () => {
+    const name = prompt("Enter new category name:");
+    if(!name || !name.trim()) return;
+    const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    menuData.push({
+      id: id,
+      name: name.trim().toUpperCase(),
+      sub: "New Category",
+      ico: "i-veg",
+      count: "0 Items",
+      rows: []
+    });
+    activeCatId = id;
+    buildSidebar();
+    buildContent();
+    showToast("Category created");
+  });
+  sb.appendChild(addBtn);
 }
 
 /* ── Build Content ── */
