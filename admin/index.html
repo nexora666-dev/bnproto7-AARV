@@ -755,6 +755,7 @@ function buildSidebar(){
     activeCatId = id;
     buildSidebar();
     buildContent();
+    saveData();
     showToast("Category created");
   });
   sb.appendChild(addBtn);
