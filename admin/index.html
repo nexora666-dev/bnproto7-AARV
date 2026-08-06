@@ -846,8 +846,10 @@ function buildContent(){
     showToast('Items deleted');
   });
 
-  const grid = document.getElementById('itemsGrid');
-  grid.innerHTML = '';
+  const oldGrid = document.getElementById('itemsGrid');
+  const newGrid = oldGrid.cloneNode(false); // clone without children = kills all old listeners
+  oldGrid.parentNode.replaceChild(newGrid, oldGrid);
+  const grid = newGrid;
 
   rows.forEach((item, idx) => {
     const card = document.createElement('div');
@@ -913,7 +915,7 @@ function buildContent(){
     grid.appendChild(card);
   });
 
-  // Event delegation for grid
+  // Fresh event listeners — only one set, bound to current cat
   grid.addEventListener('input', e => {
     const el = e.target;
     if(!el.dataset.field) return;
@@ -924,21 +926,18 @@ function buildContent(){
 
   grid.addEventListener('change', e => {
     const el = e.target;
-    // Checkbox select
     if(el.type === 'checkbox' && el.dataset.selidx !== undefined){
       const idx = parseInt(el.dataset.selidx);
       if(el.checked) selectedItems.add(idx); else selectedItems.delete(idx);
       el.closest('.admin-item').classList.toggle('selected', el.checked);
       return;
     }
-    // Diet dropdown
     if(el.dataset.field === 'd'){
       const idx = parseInt(el.dataset.idx);
       const r = getRows(cat);
       if(r[idx]) r[idx].d = el.value;
       return;
     }
-    // File input (photo)
     if(el.type === 'file' && el.dataset.idx !== undefined){
       const idx = parseInt(el.dataset.idx);
       const file = el.files[0];
@@ -956,11 +955,8 @@ function buildContent(){
   grid.addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
     if(!btn) {
-      // Check if photo area was clicked
       const photo = e.target.closest('.item-photo');
-      if(photo){
-        photo.querySelector('input[type="file"]').click();
-      }
+      if(photo){ photo.querySelector('input[type="file"]').click(); }
       return;
     }
     const action = btn.dataset.action;
