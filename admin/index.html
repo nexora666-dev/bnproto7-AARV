@@ -320,6 +320,10 @@ select.field-input { cursor: pointer; }
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
       Reset
     </button>
+    <button class="header-btn btn-save" id="sortAllBtn" style="background:#7c5cbf;" title="Sort all items in every category by price high to low">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+      Sort High→Low
+    </button>
     <button class="header-btn btn-save" id="saveBtn">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       Save All
@@ -1080,6 +1084,27 @@ function closeMoveModal(){
 }
 document.getElementById('moveModalClose').addEventListener('click', closeMoveModal);
 document.getElementById('moveModal').addEventListener('click', e => { if(e.target === e.currentTarget) closeMoveModal(); });
+
+/* ── Sort All Categories High → Low ── */
+function parsePrice(p) {
+  if (!p) return 0;
+  // Extract first number from strings like "₹4,400", "₹85", "₹165/- Per Glass"
+  const match = p.replace(/,/g, '').match(/[\d]+(\.\d+)?/);
+  return match ? parseFloat(match[0]) : 0;
+}
+
+document.getElementById('sortAllBtn').addEventListener('click', async () => {
+  if (!confirm('Sort ALL items in ALL categories by price high to low? This will rearrange every item.')) return;
+  menuData.forEach(cat => {
+    const rows = getRows(cat);
+    rows.sort((a, b) => parsePrice(b.p) - parsePrice(a.p));
+    setRows(cat, rows);
+  });
+  await saveData();
+  buildSidebar();
+  buildContent();
+  showToast('✓ All categories sorted High → Low!');
+});
 
 /* ── Save / Reset ── */
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
