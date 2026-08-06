@@ -873,6 +873,18 @@ async function loadData(){
     document.getElementById('sidebar').innerHTML += `<div style="color:red;padding:12px;font-size:0.8rem;">DB Error: ${e.message}</div>`;
     menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
   }
+
+  // ENFORCE DYNAMIC SORTING HIGH-TO-LOW ON EVERY LOAD
+  function parsePrice(p) {
+    if (!p) return 0;
+    const match = p.replace(/,/g, '').match(/[\d]+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : 0;
+  }
+  menuData.forEach(cat => {
+    if (cat.rows && Array.isArray(cat.rows)) {
+      cat.rows.sort((a, b) => parsePrice(b.p) - parsePrice(a.p));
+    }
+  });
 }
 
 async function saveData(){
