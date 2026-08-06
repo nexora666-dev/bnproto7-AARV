@@ -11,11 +11,11 @@
 <style>
 :root {
   /* ── PALETTE ─────────────────────────── */
-  --teal:         #009B90;   /* deep turquoise (was dark green/teal) */
-  --teal-mid:     #00A89D;
-  --primary:      #40E0D0;   /* turquoise accent */
-  --primary-dark: #00CBC0;
-  --primary-light:#DFFAF7;
+  --teal:         #197771;   /* deep header teal */
+  --teal-mid:     #219790;
+  --primary:      #28ACA3;   /* exact turquoise match from user image */
+  --primary-dark: #23948C;
+  --primary-light:#E0F5F4;
   --beige:        #F5F5DC;
   --beige-light:  #FAF8F1;
   --beige-warm:   #F0EDD5;
@@ -176,7 +176,7 @@ body {
 /* ── Subtitle ────────────────────── */
 .header-sub {
   font-family: var(--serif);
-  font-size: 1.1rem; font-style: italic; font-weight: 400;
+  font-size: 1.1rem; font-style: italic; font-weight: 600;
   color: rgba(255,255,255,.55);
   letter-spacing: 0.07em;
   position: relative; z-index: 2;
@@ -787,7 +787,7 @@ body {
   <div class="header-logo-wrap">
     <img src="logo_final.png" alt="Blue Nile Restaurant" class="header-logo-img" id="headerLogoImg">
   </div>
-  <p class="header-sub">Authentic Irani · Tandoori & Kebabs · Biryani</p>
+  <p class="header-sub">RESTAURANT · CAFE · BAKERY</p>
 </header>
 
 <div class="sticky-nav-wrapper">
@@ -935,6 +935,7 @@ body {
   <symbol id="i-kulfi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14h8l-1-10c0-1-6-1-6 0z"/><path d="M11 14v6h2v-6"/></symbol>
   <symbol id="i-baklava" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l6 8-6 8-6-8 6-8z"/><path d="M9 12h6"/><path d="M12 9v6"/></symbol>
   <symbol id="i-drink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l2 15h8l2-15"/><path d="M5 6h14"/><path d="M15 3l-1 3"/><path d="M10 14h4"/><path d="M12 12v4"/></symbol>
+  <symbol id="i-bakery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10c2 0 4-1 4-3v-6c0-3-2-5-5-5H8c-3 0-5 2-5 5v6c0 2 2 3 4 3z"/><path d="M7 11v10"/><path d="M12 11v10"/><path d="M17 11v10"/><path d="M7 7c0-2 2-3 5-3s5 1 5 3"/></symbol>
 </svg>
 
 <script>
@@ -1259,6 +1260,27 @@ const D=[
      {n:"Diet Coke",p:"₹80",d:"v",desc:"Sugar-free Coca-Cola beverage."},
      {n:"Soft Drinks",p:"₹80",d:"v",desc:"Chilled canned soft drinks (Coke, Pepsi, Sprite, etc.)"},
      {n:"Mineral Water",p:"₹50",d:"v",desc:"Packaged drinking mineral water bottle."}
+   ]},
+
+  {id:"bakery-pack",name:"BAKERY PACK",sub:"Fresh from the Oven",ico:"i-bakery",count:"17 Items",
+   rows:[
+     {n:"Baklava Box",p:"₹665",d:"v",desc:"Freshly baked traditional baklava."},
+     {n:"Roat",p:"₹260",d:"v",desc:"Crispy traditional baked biscuit."},
+     {n:"Plum Cake",p:"₹195",d:"v",desc:"Rich and moist plum cake slice."},
+     {n:"Pineapple Roll",p:"₹195",d:"v",desc:"Sweet pineapple filled pastry roll."},
+     {n:"Marble Cake",p:"₹195",d:"v",desc:"Classic marble cake slice."},
+     {n:"Mawa Cake",p:"₹190",d:"v",desc:"Rich mawa infused cake."},
+     {n:"Jam Roll Cake",p:"₹190",d:"v",desc:"Soft sponge cake rolled with fruit jam."},
+     {n:"Sugar Free Biscuits",p:"₹175",d:"v",desc:"Diet-friendly crispy biscuits."},
+     {n:"Honey Complex Biscuits",p:"₹155",d:"v",desc:"Crunchy biscuits with honey flavor."},
+     {n:"Shrewsbury Biscuits",p:"₹145",d:"v",desc:"Classic buttery shortbread biscuits."},
+     {n:"Brazil Nut Biscuits",p:"₹145",d:"v",desc:"Crispy biscuits baked with Brazil nuts."},
+     {n:"Makroom",p:"₹135",d:"v",desc:"Sweet and chewy macaroon drops."},
+     {n:"Fine Khari",p:"₹95",d:"v",desc:"Delicate, extra-flaky puff pastry."},
+     {n:"Khari",p:"₹85",d:"v",desc:"Traditional flaky puff pastry biscuit."},
+     {n:"Jeera Batar",p:"₹85",d:"v",desc:"Crispy cumin-flavored butter biscuit."},
+     {n:"Toast",p:"₹85",d:"v",desc:"Crunchy baked milk toast slices."},
+     {n:"White Bread",p:"₹33",d:"v",desc:"Freshly baked soft white bread loaf."}
    ]}
 ];
 
