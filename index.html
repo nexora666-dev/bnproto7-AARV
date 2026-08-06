@@ -1452,10 +1452,10 @@ function openDishPopup(name, price, diet, portion, desc, img){
   
   const dishPhotoArea = document.getElementById('dishPhotoArea');
   if(img) {
-    dishPhotoArea.innerHTML = \`<img src="\${img}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">\`;
+    dishPhotoArea.innerHTML = `<img src="${img}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
     dishPhotoArea.style.background = 'transparent';
   } else {
-    dishPhotoArea.innerHTML = \`<svg viewBox="0 0 100 100" class="dish-cloche-svg" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+    dishPhotoArea.innerHTML = `<svg viewBox="0 0 100 100" class="dish-cloche-svg" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
         <!-- Steam lines -->
         <path class="steam steam-1" d="M42 20 Q44 15 42 10" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
         <path class="steam steam-2" d="M50 18 Q52 12 50 7" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
@@ -1475,7 +1475,7 @@ function openDishPopup(name, price, diet, portion, desc, img){
         
         <!-- Subtle shadow -->
         <ellipse cx="50" cy="74" rx="34" ry="4" fill="currentColor" fill-opacity="0.06" stroke="none"/>
-      </svg>\`;
+      </svg>`;
     dishPhotoArea.style.background = '';
   }
 
