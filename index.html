@@ -942,7 +942,7 @@ body {
 /* ═══════════════════════════════
    MENU DATA
 ═══════════════════════════════ */
-const D=[
+let D=[
   {id:"make-to-order",name:"MAKE TO ORDER",sub:"Signature Sharing Portions",ico:"i-biryani",count:"Made to Order",feat:true,kind:"hero",
    item:{name:"Mutton Raan Biryani (with Potatoes) 1 Kg",note:"Serves 6–8 Guests",price:"₹4,400",d:"nv",
          desc:"Signature 1 Kg Mutton Raan Biryani served with potatoes, special gravy (750ml), raita (750ml), tandoori salad, lemon, chutney & 4 cold drinks.",
@@ -1283,6 +1283,15 @@ const D=[
      {n:"White Bread",p:"₹33",d:"v",desc:"Freshly baked soft white bread loaf."}
    ]}
 ];
+// Override menu data with stored admin changes if present
+const storedMenu = localStorage.getItem('menuData');
+if (storedMenu) {
+  try {
+    D = JSON.parse(storedMenu);
+  } catch (e) {
+    console.error('Failed to parse stored menu data', e);
+  }
+}
 
 /* ═══════════════════════════════
    BUILD NAVIGATION PILLS
