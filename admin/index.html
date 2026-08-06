@@ -796,17 +796,16 @@ function buildContent(){
   document.getElementById('btnGenerateDB').addEventListener('click', async () => {
     try {
       showToast("Generating free database...", "success");
-      const res = await fetch('https://jsonblob.com/api/jsonBlob', {
+      const res = await fetch('https://api.npoint.io/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(menuData)
       });
-      const loc = res.headers.get('Location');
-      if(loc) {
-        const id = loc.split('/').pop();
-        prompt("SUCCESS! Here is your free Database ID. Copy it and paste it to the AI assistant:", id);
+      const data = await res.json();
+      if(data && data.id) {
+        prompt("SUCCESS! Here is your free Database ID. Copy it and paste it to the AI assistant:", data.id);
       } else {
-        alert("Failed to get location header.");
+        alert("Failed to generate database. Unexpected response.");
       }
     } catch (e) {
       alert("Error creating database: " + e.message);
