@@ -804,8 +804,12 @@ function buildContent(){
         Move Selected
       </button>
       <button class="tool-btn" id="btnDeleteSelected" style="color:var(--danger);">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         Delete Selected
+      </button>
+      <button class="tool-btn" id="btnDeleteCat" style="color:#fff; background:var(--danger); border:none;">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Delete Category
       </button>
     </div>
   `;
@@ -816,34 +820,60 @@ function buildContent(){
     buildSidebar();
   });
 
+  // ── Category name / subtitle inline editing ──
+  document.getElementById('editCatName').addEventListener('change', async (e) => {
+    cat.name = e.target.value.trim() || cat.name;
+    await saveData();
+    buildSidebar();
+  });
+
   document.getElementById('editCatSub').addEventListener('change', async (e) => {
     cat.sub = e.target.value;
     await saveData();
   });
 
-  document.getElementById('btnAddItem').addEventListener('click', ()=>{
+  // ── Add Item ──
+  document.getElementById('btnAddItem').addEventListener('click', async () => {
     const newRows = getRows(cat);
-    newRows.push({ n: '', p: '', d: 'v', desc: '' });
+    newRows.push({ n: 'New Item', p: '₹0', d: 'v', desc: '' });
     setRows(cat, newRows);
+    await saveData();
     buildContent();
     buildSidebar();
+    showToast('Item added');
   });
 
-  document.getElementById('btnMoveSelected').addEventListener('click', ()=>{
+  // ── Move Selected ──
+  document.getElementById('btnMoveSelected').addEventListener('click', () => {
     if(selectedItems.size === 0){ showToast('Select items first', 'error'); return; }
     openMoveModal();
   });
 
-  document.getElementById('btnDeleteSelected').addEventListener('click', ()=>{
+  // ── Delete Selected Items ──
+  document.getElementById('btnDeleteSelected').addEventListener('click', async () => {
     if(selectedItems.size === 0){ showToast('Select items first', 'error'); return; }
     if(!confirm(`Delete ${selectedItems.size} item(s)?`)) return;
     const currentRows = getRows(cat);
     const newRows = currentRows.filter((_, i) => !selectedItems.has(i));
     setRows(cat, newRows);
     selectedItems.clear();
+    await saveData();
     buildContent();
     buildSidebar();
-    showToast('Items deleted');
+    showToast('Items deleted & saved');
+  });
+
+  // ── Delete Entire Category ──
+  document.getElementById('btnDeleteCat').addEventListener('click', async () => {
+    if(!confirm(`Delete the entire "${cat.name}" category and ALL its items? This cannot be undone.`)) return;
+    const idx = menuData.findIndex(c => c.id === activeCatId);
+    if(idx !== -1) menuData.splice(idx, 1);
+    activeCatId = menuData[0]?.id || null;
+    selectedItems.clear();
+    await saveData();
+    buildSidebar();
+    buildContent();
+    showToast(`Category "${cat.name}" deleted`);
   });
 
   const oldGrid = document.getElementById('itemsGrid');
@@ -916,37 +946,51 @@ function buildContent(){
   });
 
   // Fresh event listeners — only one set, bound to current cat
+  // Debounced auto-save: fires 1.2s after user stops typing
+  let saveTimer = null;
+  function debouncedSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveData(), 1200);
+  }
+
   grid.addEventListener('input', e => {
     const el = e.target;
     if(!el.dataset.field) return;
     const idx = parseInt(el.dataset.idx);
     const r = getRows(cat);
     if(r[idx]) r[idx][el.dataset.field] = el.value;
+    debouncedSave(); // auto-save every rename/price/desc change
   });
 
   grid.addEventListener('change', e => {
     const el = e.target;
+    // Checkbox select — no save needed
     if(el.type === 'checkbox' && el.dataset.selidx !== undefined){
       const idx = parseInt(el.dataset.selidx);
       if(el.checked) selectedItems.add(idx); else selectedItems.delete(idx);
       el.closest('.admin-item').classList.toggle('selected', el.checked);
       return;
     }
+    // Diet dropdown — save immediately
     if(el.dataset.field === 'd'){
       const idx = parseInt(el.dataset.idx);
       const r = getRows(cat);
       if(r[idx]) r[idx].d = el.value;
+      saveData().then(() => showToast('Diet updated'));
       return;
     }
+    // File input (photo) — convert to base64 then save
     if(el.type === 'file' && el.dataset.idx !== undefined){
       const idx = parseInt(el.dataset.idx);
       const file = el.files[0];
       if(!file) return;
       const reader = new FileReader();
-      reader.onload = ev => {
+      reader.onload = async ev => {
         const r = getRows(cat);
         if(r[idx]) r[idx].img = ev.target.result;
+        await saveData();
         buildContent();
+        showToast('Photo saved');
       };
       reader.readAsDataURL(file);
     }
@@ -964,22 +1008,25 @@ function buildContent(){
     const r = getRows(cat);
 
     if(action === 'del'){
+      if(!confirm('Delete this item?')) return;
       r.splice(idx, 1);
       setRows(cat, r);
       selectedItems.clear();
+      saveData().then(() => showToast('Item deleted'));
       buildContent(); buildSidebar();
-      showToast('Item deleted');
     }
     if(action === 'up' && idx > 0){
       [r[idx-1], r[idx]] = [r[idx], r[idx-1]];
       setRows(cat, r);
       selectedItems.clear();
+      saveData();
       buildContent();
     }
     if(action === 'down' && idx < r.length - 1){
       [r[idx], r[idx+1]] = [r[idx+1], r[idx]];
       setRows(cat, r);
       selectedItems.clear();
+      saveData();
       buildContent();
     }
     if(action === 'move'){
@@ -1006,7 +1053,7 @@ function openMoveModal(){
     const opt = document.createElement('div');
     opt.className = 'modal-cat-option';
     opt.textContent = cat.name;
-    opt.addEventListener('click', () => {
+    opt.addEventListener('click', async () => {
       const srcCat = menuData.find(c => c.id === activeCatId);
       const srcRows = getRows(srcCat);
       const targetRows = getRows(cat);
@@ -1019,6 +1066,7 @@ function openMoveModal(){
       setRows(cat, targetRows);
       selectedItems.clear();
       closeMoveModal();
+      await saveData();
       buildSidebar();
       buildContent();
       showToast(`Moved to ${cat.name}`);
