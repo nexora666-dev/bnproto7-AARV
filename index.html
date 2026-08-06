@@ -1435,6 +1435,18 @@ async function loadMenuFromSupabase() {
   } catch(e) {
     console.warn('Could not load menu from Supabase, using defaults:', e.message);
   }
+
+  // ENFORCE DYNAMIC SORTING HIGH-TO-LOW ON EVERY LOAD
+  function parsePrice(p) {
+    if (!p) return 0;
+    const match = p.replace(/,/g, '').match(/[\d]+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : 0;
+  }
+  D.forEach(cat => {
+    if (cat.rows && Array.isArray(cat.rows)) {
+      cat.rows.sort((a, b) => parsePrice(b.p) - parsePrice(a.p));
+    }
+  });
 }
 
 /* ═══════════════════════════════
