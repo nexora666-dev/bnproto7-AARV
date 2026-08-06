@@ -774,6 +774,10 @@ function buildContent(){
       <div style="font-size:0.75rem; color:var(--text-muted); padding-left:8px;">${rows.length} items (Changes to category details auto-save)</div>
     </div>
     <div class="toolbar">
+      <button class="tool-btn" id="btnGenerateDB" style="background:var(--primary); color:white; border:none; font-weight:bold;">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Generate Global DB
+      </button>
       <button class="tool-btn" id="btnAddItem">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Add Item
@@ -788,6 +792,26 @@ function buildContent(){
       </button>
     </div>
   `;
+
+  document.getElementById('btnGenerateDB').addEventListener('click', async () => {
+    try {
+      showToast("Generating free database...", "success");
+      const res = await fetch('https://jsonblob.com/api/jsonBlob', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(menuData)
+      });
+      const loc = res.headers.get('Location');
+      if(loc) {
+        const id = loc.split('/').pop();
+        prompt("SUCCESS! Here is your free Database ID. Copy it and paste it to the AI assistant:", id);
+      } else {
+        alert("Failed to get location header.");
+      }
+    } catch (e) {
+      alert("Error creating database: " + e.message);
+    }
+  });
 
   document.getElementById('editCatName').addEventListener('change', (e) => {
     cat.name = e.target.value;
