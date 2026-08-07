@@ -1570,9 +1570,6 @@ function renderAsk(c){
   </div>`;
 }
 
-// Safe global store — base64 images must never be inline in onclick attributes
-let _currentCatRows = [];
-
 function renderList(c){
   _currentCatRows = c.rows || [];
   const rows = _currentCatRows.map((r, i) => `
