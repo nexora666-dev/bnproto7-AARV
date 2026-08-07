@@ -1499,6 +1499,9 @@ const pIco=document.getElementById('pIco');
 const pTitle=document.getElementById('pTitle');
 const pSub=document.getElementById('pSub');
 const pBody=document.getElementById('pBody');
+// Safe global store so base64 images never corrupt onclick attributes
+let _currentCatRows = [];
+
 document.getElementById('pClose').addEventListener('click',closeCategoryModal);
 OL.addEventListener('click',e=>{if(e.target===OL)closeCategoryModal();});
 
@@ -1567,16 +1570,26 @@ function renderAsk(c){
   </div>`;
 }
 
+// Safe global store — base64 images must never be inline in onclick attributes
+let _currentCatRows = [];
+
 function renderList(c){
-  const rows=c.rows.map(r=>`
-    <div class="irow" onclick="openDishPopup('${(r.n||'').replace(/'/g, "\\'")}', '${r.p||''}', '${r.d||'v'}', '${(r.v||'Standard Portion').replace(/'/g, "\\'")}', '${(r.desc||'Signature preparation').replace(/'/g, "\\'")}', '${r.img||''}')">
+  _currentCatRows = c.rows || [];
+  const rows = _currentCatRows.map((r, i) => `
+    <div class="irow" onclick="_openRow(${i})">
       ${r.d==='v'?'<span class="vdot"></span>':'<span class="ndot"></span>'}
       <span class="iname">${r.n}</span>
       <span class="ileader"></span>
       <span class="iprice">${r.p}</span>
-      <span class="click-hint-icon">➔</span>
+      <span class="click-hint-icon">&#10148;</span>
     </div>`).join('');
   pBody.innerHTML=`<div class="items-grid">${rows}</div>`;
+}
+
+function _openRow(i){
+  const r = _currentCatRows[i];
+  if(!r) return;
+  openDishPopup(r.n||'', r.p||'', r.d||'v', r.v||'Standard Portion', r.desc||'Signature preparation', r.img||'');
 }
 
 /* ═══════════════════════════════
