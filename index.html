@@ -1403,33 +1403,19 @@ let D=[
       {n:"Baklava Box",p:"₹665",d:"v",desc:"Freshly baked traditional baklava."},
       {n:"Roat",p:"₹260",d:"v",desc:"Crispy traditional baked biscuit."},
       {n:"Plum Cake",p:"₹195",d:"v",desc:"Rich and moist plum cake slice."},
-      {n:"Pineapple function buildBento(){
-  const g=document.getElementById('bento');
-  const fragment=document.createDocumentFragmfunction buildBento(){
-  const g=document.getElementById('bento');
-  const fragment=document.createDocumentFragment();
-  D.forEach((c,i)=>{
-    const el=document.createElement('div');
-    el.className='card'+(c.feat?' card-feat':'');
-    el.id='card-'+c.id;
-    el.tabIndex=0;el.setAttribute('role','button');
-
-    el.innerHTML=`
-      <div class="card-num">${String(i+1).padStart(2,'0')}</div>
-      <div class="card-ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#${c.ico}"/></svg></div>
-      <div class="card-name">${c.name}</div>
-      <div class="card-desc">${c.sub}</div>
-      <div class="card-foot">
-        <span class="card-count">${c.count}</span>
-        <span class="card-btn"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></span>
-      </div>`;
-    el.addEventListener('click',()=>openCategoryModal(c.id));
-    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCategoryModal(c.id);}});
-    fragment.appendChild(el);
-  });
-  g.appendChild(fragment);
-}
- toast slices."},
+      {n:"Pineapple Roll",p:"₹195",d:"v",desc:"Sweet pineapple filled pastry roll."},
+      {n:"Marble Cake",p:"₹195",d:"v",desc:"Classic marble cake slice."},
+      {n:"Mawa Cake",p:"₹190",d:"v",desc:"Rich mawa infused cake."},
+      {n:"Jam Roll Cake",p:"₹190",d:"v",desc:"Soft sponge cake rolled with fruit jam."},
+      {n:"Sugar Free Biscuits",p:"₹175",d:"v",desc:"Diet-friendly crispy biscuits."},
+      {n:"Honey Complex Biscuits",p:"₹155",d:"v",desc:"Crunchy biscuits with honey flavor."},
+      {n:"Shrewsbury Biscuits",p:"₹145",d:"v",desc:"Classic buttery shortbread biscuits."},
+      {n:"Brazil Nut Biscuits",p:"₹145",d:"v",desc:"Crispy biscuits baked with Brazil nuts."},
+      {n:"Makroom",p:"₹135",d:"v",desc:"Sweet and chewy macaroon drops."},
+      {n:"Fine Khari",p:"₹95",d:"v",desc:"Delicate, extra-flaky puff pastry."},
+      {n:"Khari",p:"₹85",d:"v",desc:"Traditional flaky puff pastry biscuit."},
+      {n:"Jeera Batar",p:"₹85",d:"v",desc:"Crispy cumin-flavored butter biscuit."},
+      {n:"Toast",p:"₹85",d:"v",desc:"Crunchy baked milk toast slices."},
       {n:"White Bread",p:"₹33",d:"v",desc:"Freshly baked soft white bread loaf."}
     ]
   }
@@ -1484,6 +1470,7 @@ function buildPills(){
 ═══════════════════════════════ */
 function buildBento(){
   const g=document.getElementById('bento');
+  const fragment = document.createDocumentFragment();
   D.forEach((c,i)=>{
     const el=document.createElement('div');
     el.className='card'+(c.feat?' card-feat':'');
@@ -1501,8 +1488,9 @@ function buildBento(){
       </div>`;
     el.addEventListener('click',()=>openCategoryModal(c.id));
     el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCategoryModal(c.id);}});
-    g.appendChild(el);
+    fragment.appendChild(el);
   });
+  g.appendChild(fragment);
 }
 
 /* ═══════════════════════════════
