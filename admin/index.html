@@ -1033,6 +1033,12 @@ function buildContent(){
   document.getElementById('btnAddItem').addEventListener('click', async () => {
     const newRows = getRows(cat);
     newRows.push({ n: 'New Item', p: '₹0', d: 'v', desc: '' });
+    // Sort high‑to‑low by price after insertion
+    newRows.sort((a, b) => {
+      const pa = parseFloat(a.p.replace(/[^\d.]/g, '')) || 0;
+      const pb = parseFloat(b.p.replace(/[^\d.]/g, '')) || 0;
+      return pb - pa;
+    });
     setRows(cat, newRows);
     await saveData();
     buildContent();

@@ -1572,6 +1572,12 @@ function renderAsk(c){
 
 function renderList(c){
   _currentCatRows = c.rows || [];
+  // Sort items by price descending (high to low)
+  _currentCatRows.sort((a, b) => {
+    const priceA = Number(a.p.replace(/[^0-9]/g, ''));
+    const priceB = Number(b.p.replace(/[^0-9]/g, ''));
+    return priceB - priceA;
+  });
   const rows = _currentCatRows.map((r, i) => `
     <div class="irow" onclick="_openRow(${i})">
       ${r.d==='v'?'<span class="vdot"></span>':'<span class="ndot"></span>'}
