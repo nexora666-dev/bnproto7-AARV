@@ -1192,51 +1192,22 @@ function buildContent(){
       if(!file) return;
 
       const reader = new FileReader();
-      reader.onload = ev => {
-        // Create an image to compress
-        const img = new Image();
-        img.onload = async () => {
-          // Canvas for resizing
-          const canvas = document.createElement('canvas');
-          const MAX_SIZE = 500; // Cap at 500px to keep JSON ultra-light
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_SIZE) {
-              height *= MAX_SIZE / width;
-              width = MAX_SIZE;
-            }
-          } else {
-            if (height > MAX_SIZE) {
-              width *= MAX_SIZE / height;
-              height = MAX_SIZE;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Compress to lightweight webp or jpeg
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
-          const r = getRows(cat);
-          if(r[idx]) r[idx].img = compressedBase64;
-          setRows(cat, r);
-          
-          showToast('Saving optimized photo...');
-          try {
-            await saveData();
-            buildContent();
-            showToast('Photo saved successfully!');
-          } catch(err) {
-            showToast('Failed to save photo', 'error');
-            console.error(err);
-          }
-        };
-        img.src = ev.target.result;
+      reader.onload = async ev => {
+        const base64 = ev.target.result;
+        
+        const r = getRows(cat);
+        if(r[idx]) r[idx].img = base64;
+        setRows(cat, r);
+        
+        showToast('Saving photo...');
+        try {
+          await saveData();
+          buildContent();
+          showToast('Photo saved successfully!');
+        } catch(err) {
+          showToast('Failed to save photo', 'error');
+          console.error(err);
+        }
       };
       reader.readAsDataURL(file);
     }
