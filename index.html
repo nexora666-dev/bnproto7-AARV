@@ -1545,7 +1545,7 @@ function renderHero(c){
       <span class="ndot"></span>
       <div style="flex:1">
         <span class="iname" style="font-size:1.15rem">${it.name}</span>
-        <span class="ivariant">${it.note} · Tap for dish photo & details</span>
+        <span class="ivariant">${it.note} · Tap for details</span>
       </div>
       <span class="iprice" style="font-size:1.2rem">${it.price}</span>
       <span class="click-hint-icon">➔</span>
@@ -1554,13 +1554,13 @@ function renderHero(c){
 
 function renderFlat(c){
   const rows=c.rows.map(r=>`
-    <div class="irow" onclick="openDishPopup('${(r.n||'').replace(/'/g, "\\'")}', '${c.flatP}', '${r.d||'v'}', 'Single Portion', '${(r.desc||'Authentic dish').replace(/'/g, "\\'")}', '${r.img||''}')">
+    <div class="irow" onclick="openDishPopup('${(r.n||'').replace(/'/g, "\\'")}', '${c.flatP}', '${r.d||'v'}', 'Single Portion', '${(r.desc||'Authentic dish').replace(/'/g, "\\'")}')">
       ${r.d==='v'?'<span class="vdot"></span>':'<span class="ndot"></span>'}
       <span class="iname">${r.n}</span>
       <span class="iprice">${c.flatP}</span>
       <span class="click-hint-icon">➔</span>
     </div>`).join('');
-  pBody.innerHTML=`<div style="background:var(--g8);padding:10px 16px;border-radius:10px;margin-bottom:12px;font-size:0.85rem;color:var(--g1);font-weight:600">All Chinese Dishes Flat ${c.flatP} · Tap any dish to view photo space</div><div class="items-grid">${rows}</div>`;
+  pBody.innerHTML=`<div style="background:var(--g8);padding:10px 16px;border-radius:10px;margin-bottom:12px;font-size:0.85rem;color:var(--g1);font-weight:600">All Chinese Dishes Flat ${c.flatP}</div><div class="items-grid">${rows}</div>`;
 }
 
 function renderAsk(c){
@@ -1625,34 +1625,9 @@ function openDishPopup(name, price, diet, portion, desc, img){
   }
   
   const dishPhotoArea = document.getElementById('dishPhotoArea');
-  if(img) {
-    dishPhotoArea.style.position = 'relative';
-    dishPhotoArea.style.overflow = 'hidden';
-    dishPhotoArea.style.borderRadius = '14px';
-    dishPhotoArea.style.background = 'var(--surface-color)';
-    dishPhotoArea.innerHTML = `
-      <img src="${img}" alt="${name}" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in;" title="Tap to view full size" onclick="openFullImg('${img}')">
-    `;
-  } else {
-    dishPhotoArea.innerHTML = `<svg viewBox="0 0 100 100" class="dish-cloche-svg" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <!-- Steam lines -->
-        <path class="steam steam-1" d="M42 20 Q44 15 42 10" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <path class="steam steam-2" d="M50 18 Q52 12 50 7" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <path class="steam steam-3" d="M58 20 Q60 15 58 10" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-        <!-- Cloche Handle -->
-        <circle cx="50" cy="24" r="3.5" stroke-width="2"/>
-        <!-- Cloche Dome -->
-        <path d="M22 56 C22 34 32 28 50 28 C68 28 78 34 78 56" stroke-width="2" stroke-linecap="round"/>
-        <!-- Cloche Base -->
-        <path d="M16 56 L84 56 C86.2 56 88 57.8 88 60 L88 62 L12 62 L12 60 C12 57.8 13.8 56 16 56 Z" stroke-width="2" stroke-linejoin="round"/>
-        <!-- Plate Line -->
-        <path d="M24 62 L76 62" stroke-width="2"/>
-        <!-- Subtle shadow -->
-        <ellipse cx="50" cy="74" rx="34" ry="4" fill="currentColor" fill-opacity="0.06" stroke="none"/>
-      </svg>`;
-    dishPhotoArea.style.background = '';
-    dishPhotoArea.style.borderRadius = '';
-  }
+  dishPhotoArea.style.display = 'none';
+  dishPhotoArea.innerHTML = '';
+
 
   dishOverlay.classList.add('on');
 }
