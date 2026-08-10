@@ -1480,7 +1480,11 @@ let _currentCatRows = [];
 document.getElementById('pClose').addEventListener('click',closeCategoryModal);
 OL.addEventListener('click',e=>{if(e.target===OL)closeCategoryModal();});
 
+// Track which category is currently open so we can re-render after Supabase loads
+let _openCatId = null;
+
 function openCategoryModal(id){
+  _openCatId = id;
   const c=D.find(x=>x.id===id);if(!c)return;
   pTitle.textContent=c.name;
   pSub.textContent=c.sub;
@@ -1504,6 +1508,7 @@ function openCategoryModal(id){
 }
 
 function closeCategoryModal(){
+  _openCatId = null;
   OL.classList.remove('on');
   document.body.style.overflow='';
   // Remove active class from pills
@@ -1716,6 +1721,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(bento) bento.innerHTML = '';
     buildPills();
     buildBento();
+    // 4. If a category modal is open, re-render it with fresh data (so images appear)
+    if(_openCatId) openCategoryModal(_openCatId);
   });
 });
 </script>
