@@ -1191,25 +1191,33 @@ function buildContent(){
       const file = el.files[0];
       if(!file) return;
 
-      const reader = new FileReader();
-      reader.onload = async ev => {
-        const base64 = ev.target.result;
+      showToast('Uploading full-HD photo...');
+      
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+      
+      try {
+        const { data, error } = await _db.storage.from('menu-images').upload(fileName, file, {
+          cacheControl: '31536000',
+          upsert: false
+        });
+
+        if (error) throw error;
+
+        const { data: publicUrlData } = _db.storage.from('menu-images').getPublicUrl(fileName);
+        const imageUrl = publicUrlData.publicUrl;
         
         const r = getRows(cat);
-        if(r[idx]) r[idx].img = base64;
+        if(r[idx]) r[idx].img = imageUrl;
         setRows(cat, r);
         
-        showToast('Saving photo...');
-        try {
-          await saveData();
-          buildContent();
-          showToast('Photo saved successfully!');
-        } catch(err) {
-          showToast('Failed to save photo', 'error');
-          console.error(err);
-        }
-      };
-      reader.readAsDataURL(file);
+        showToast('Saving to menu database...');
+        await saveData();
+        buildContent();
+        showToast('Photo uploaded successfully!');
+      } catch(err) {
+        showToast('Failed to upload photo', 'error');
+        console.error(err);
+      }
     }
   });
 
