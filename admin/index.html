@@ -324,6 +324,10 @@ select.field-input { cursor: pointer; }
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
       Sort High→Low
     </button>
+    <button class="header-btn btn-save" id="migrateBtn" style="background:#d97706;" title="Convert old Base64 images to fast CDN URLs">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      Migrate Images
+    </button>
     <button class="header-btn btn-save" id="saveBtn">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       Save All
@@ -847,9 +851,8 @@ const DEFAULT_DATA=[
 /* ── Supabase ── */
 const SUPABASE_URL = 'https://hcgangjurvsisqdrwkqo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2FuZ2p1cnZzaXNxZHJ3a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMjA4ODMsImV4cCI6MjEwMTU5Njg4M30.Ipq0PSp2dbRVA9Ik8xQtscozPL4qz9rGoCS6NaFmHu8';
-// Supabase v2 CDN exposes { createClient } on window.supabase
-const { createClient } = window.supabase;
-const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Supabase v2 CDN exposes the client on window.supabase
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ── State ── */
 let menuData = [];
@@ -1319,6 +1322,61 @@ function parsePrice(p) {
   const match = p.replace(/,/g, '').match(/[\d]+(\.\d+)?/);
   return match ? parseFloat(match[0]) : 0;
 }
+
+/* ── Migrate Base64 Images to Supabase Storage ── */
+document.getElementById('migrateBtn').addEventListener('click', async () => {
+  if (!confirm('This will upload all existing Base64 photos to cloud storage and replace them with fast URLs. Continue?')) return;
+  let total = 0, done = 0;
+  // Count items with base64 images
+  menuData.forEach(cat => {
+    const rows = getRows(cat);
+    rows.forEach(r => { if (r.img && r.img.startsWith('data:')) total++; });
+    if (cat.item && cat.item.img && cat.item.img.startsWith('data:')) total++;
+  });
+  if (total === 0) { showToast('No Base64 images found — already migrated!'); return; }
+  showToast(`Migrating ${total} images...`);
+  for (const cat of menuData) {
+    const rows = getRows(cat);
+    for (const r of rows) {
+      if (r.img && r.img.startsWith('data:')) {
+        try {
+          // Convert base64 to blob
+          const res = await fetch(r.img);
+          const blob = await res.blob();
+          const ext = blob.type.split('/')[1] || 'jpg';
+          const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const { error } = await _supabase.storage.from('menu-images').upload(fileName, blob, { cacheControl: '31536000' });
+          if (!error) {
+            const { data: pub } = _supabase.storage.from('menu-images').getPublicUrl(fileName);
+            r.img = pub.publicUrl;
+            done++;
+            showToast(`Uploading... ${done}/${total}`);
+          }
+        } catch(e) { console.error('Failed item:', r.n, e); }
+      }
+    }
+    setRows(cat, rows);
+    if (cat.item && cat.item.img && cat.item.img.startsWith('data:')) {
+      try {
+        const res = await fetch(cat.item.img);
+        const blob = await res.blob();
+        const ext = blob.type.split('/')[1] || 'jpg';
+        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await _supabase.storage.from('menu-images').upload(fileName, blob, { cacheControl: '31536000' });
+        if (!error) {
+          const { data: pub } = _supabase.storage.from('menu-images').getPublicUrl(fileName);
+          cat.item.img = pub.publicUrl;
+          done++;
+          showToast(`Uploading... ${done}/${total}`);
+        }
+      } catch(e) { console.error('Failed hero:', cat.name, e); }
+    }
+  }
+  await saveData();
+  buildSidebar();
+  buildContent();
+  showToast(`✅ Done! ${done}/${total} images migrated to fast CDN!`);
+});
 
 document.getElementById('sortAllBtn').addEventListener('click', async () => {
   if (!confirm('Sort ALL items in ALL categories by price high to low? This will rearrange every item.')) return;
