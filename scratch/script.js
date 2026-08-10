@@ -821,39 +821,51 @@ function buildContent(){
       saveData().then(() => showToast('Diet updated'));
       return;
     }
-    // File input (photo) — Compress before saving to prevent DB bloat/crashes
+    // File input (photo)
     if(el.type === 'file' && el.dataset.idx !== undefined){
       const idx = parseInt(el.dataset.idx);
       const file = el.files[0];
       if(!file) return;
 
-      showToast('Uploading full-HD photo...');
-      
-      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
-      
+      showToast('Uploading photo...');
+
+      // Try Supabase Storage first
+      let imageUrl = null;
       try {
-        const { data, error } = await _supabase.storage.from('menu-images').upload(fileName, file, {
+        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+        const { data: upData, error: upErr } = await _supabase.storage.from('menu-images').upload(fileName, file, {
           cacheControl: '31536000',
-          upsert: false
+          upsert: true
         });
-
-        if (error) throw error;
-
+        if (upErr) throw upErr;
         const { data: publicUrlData } = _supabase.storage.from('menu-images').getPublicUrl(fileName);
-        const imageUrl = publicUrlData.publicUrl;
-        
-        const r = getRows(cat);
-        if(r[idx]) r[idx].img = imageUrl;
-        setRows(cat, r);
-        
-        showToast('Saving to menu database...');
-        await saveData();
-        buildContent();
-        showToast('Photo uploaded successfully!');
-      } catch(err) {
-        showToast('Failed to upload photo', 'error');
-        console.error(err);
+        imageUrl = publicUrlData.publicUrl;
+        showToast('Photo uploaded to CDN!');
+      } catch(storageErr) {
+        // Fallback: save as Base64 directly in the menu
+        console.warn('Supabase Storage failed, using Base64 fallback:', storageErr.message || storageErr);
+        showToast('CDN failed, saving locally...');
+        try {
+          imageUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        } catch(b64Err) {
+          showToast('Upload failed: ' + (storageErr.message || storageErr), 'error');
+          console.error(storageErr);
+          return;
+        }
       }
+
+      const r = getRows(cat);
+      if(r[idx]) r[idx].img = imageUrl;
+      setRows(cat, r);
+      showToast('Saving...');
+      await saveData();
+      buildContent();
+      showToast('\u2705 Photo saved!');
     }
   });
 
