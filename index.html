@@ -1425,29 +1425,7 @@ const SUPABASE_URL = 'https://hcgangjurvsisqdrwkqo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2FuZ2p1cnZzaXNxZHJ3a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMjA4ODMsImV4cCI6MjEwMTU5Njg4M30.Ipq0PSp2dbRVA9Ik8xQtscozPL4qz9rGoCS6NaFmHu8';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function loadMenuFromSupabase() {
-  try {
-    const { data, error } = await _supabase.from('global_menu').select('data').eq('id', 1).single();
-    if (error) throw error;
-    if (data && Array.isArray(data.data) && data.data.length > 0) {
-      D = data.data;
-    }
-  } catch(e) {
-    console.warn('Could not load menu from Supabase, using defaults:', e.message);
-  }
 
-  // ENFORCE DYNAMIC SORTING HIGH-TO-LOW ON EVERY LOAD
-  function parsePrice(p) {
-    if (!p) return 0;
-    const match = p.replace(/,/g, '').match(/[\d]+(\.\d+)?/);
-    return match ? parseFloat(match[0]) : 0;
-  }
-  D.forEach(cat => {
-    if (cat.rows && Array.isArray(cat.rows)) {
-      cat.rows.sort((a, b) => parsePrice(b.p) - parsePrice(a.p));
-    }
-  });
-}
 
 /* ═══════════════════════════════
    BUILD NAVIGATION PILLS
@@ -1700,11 +1678,50 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Separate sorting function to sort data synchronously
+function sortMenuData() {
+  function parsePrice(p) {
+    if (!p) return 0;
+    const match = p.replace(/,/g, '').match(/[\d]+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : 0;
+  }
+  D.forEach(cat => {
+    if (cat.rows && Array.isArray(cat.rows)) {
+      cat.rows.sort((a, b) => parsePrice(b.p) - parsePrice(a.p));
+    }
+  });
+}
+
+async function loadMenuFromSupabase() {
+  try {
+    const { data, error } = await _supabase.from('global_menu').select('data').eq('id', 1).single();
+    if (error) throw error;
+    if (data && Array.isArray(data.data) && data.data.length > 0) {
+      D = data.data;
+      sortMenuData();
+    }
+  } catch(e) {
+    console.warn('Could not load menu from Supabase, using defaults:', e.message);
+  }
+}
+
 /* INIT */
-window.addEventListener('DOMContentLoaded', async () => {
-  await loadMenuFromSupabase();
+window.addEventListener('DOMContentLoaded', () => {
+  // 1. Immediately sort and render the preloaded D array (Lightning fast!)
+  sortMenuData();
   buildPills();
   buildBento();
+
+  // 2. Fetch the latest from Supabase in the background
+  loadMenuFromSupabase().then(() => {
+    // 3. Clear existing UI and Re-render with latest data smoothly
+    const nav = document.getElementById('pillNav');
+    const bento = document.getElementById('bento');
+    if(nav) nav.innerHTML = '';
+    if(bento) bento.innerHTML = '';
+    buildPills();
+    buildBento();
+  });
 });
 </script>
 </body>
