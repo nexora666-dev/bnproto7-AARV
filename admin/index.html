@@ -1196,7 +1196,6 @@ function buildContent(){
 
       showToast('Uploading photo...');
 
-      // Try Supabase Storage first
       let imageUrl = null;
       try {
         const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
@@ -1209,30 +1208,22 @@ function buildContent(){
         imageUrl = publicUrlData.publicUrl;
         showToast('Photo uploaded to CDN!');
       } catch(storageErr) {
-        // Fallback: save as Base64 directly in the menu
-        console.warn('Supabase Storage failed, using Base64 fallback:', storageErr.message || storageErr);
-        showToast('CDN failed, saving locally...');
-        try {
-          imageUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = e => resolve(e.target.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-        } catch(b64Err) {
-          showToast('Upload failed: ' + (storageErr.message || storageErr), 'error');
-          console.error(storageErr);
-          return;
-        }
+        showToast('Upload failed: ' + (storageErr.message || storageErr), 'error');
+        console.error(storageErr);
+        return;
       }
 
       const r = getRows(cat);
       if(r[idx]) r[idx].img = imageUrl;
       setRows(cat, r);
       showToast('Saving...');
-      await saveData();
+      const saveSuccess = await saveData();
       buildContent();
-      showToast('\u2705 Photo saved!');
+      if(saveSuccess) {
+        showToast('\u2705 Photo saved!');
+      } else {
+        showToast('\u274C Failed to save photo to DB', 'error');
+      }
     }
   });
 
