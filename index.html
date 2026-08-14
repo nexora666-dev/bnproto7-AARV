@@ -21,8 +21,8 @@
 
 body {
   font-family: var(--sans);
-  background: var(--beige-light);
-  color: var(--text-dark);
+  background: linear-gradient(135deg, var(--teal) 0%, #0D4F4A 100%);
+  color: #ffffff;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -39,13 +39,14 @@ body {
   animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
   transform: translateY(20px);
+  filter: brightness(0) invert(1) drop-shadow(0 4px 12px rgba(0,0,0,0.3));
 }
 
 .title {
   font-family: var(--serif);
   font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 600;
-  color: var(--teal);
+  color: #ffffff;
   margin-bottom: 16px;
   line-height: 1.1;
   animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
@@ -56,7 +57,7 @@ body {
 .subtitle {
   font-size: clamp(1.1rem, 2vw, 1.3rem);
   font-weight: 400;
-  color: #2C4D4A;
+  color: rgba(255, 255, 255, 0.8);
   max-width: 500px;
   line-height: 1.6;
   animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
@@ -67,7 +68,7 @@ body {
 .divider {
   width: 60px;
   height: 3px;
-  background: var(--primary);
+  background: rgba(255, 255, 255, 0.5);
   margin: 32px auto;
   border-radius: 2px;
   animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
@@ -85,7 +86,7 @@ body {
 </head>
 <body>
 
-  <img src="logo_clean.png" alt="Blue Nile Logo" class="logo">
+  <img src="logo_final.png" alt="Blue Nile Logo" class="logo">
   
   <h1 class="title">Something extraordinary is arriving soon.</h1>
   
