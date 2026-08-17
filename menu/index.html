@@ -1512,9 +1512,15 @@ function openCategoryModal(id){
 }
 
 function closeCategoryModal(fromPopState = false){
-  if(fromPopState !== true) { history.back(); return; }
+  if(fromPopState !== true) {
+    if(OL.style.pointerEvents === 'none') return;
+    OL.style.pointerEvents = 'none';
+    history.back();
+    return;
+  }
   _openCatId = null;
   OL.classList.remove('on');
+  OL.style.pointerEvents = '';
   document.body.style.overflow='';
   // Remove active class from pills
   const pills = document.querySelectorAll('.pill-btn');
@@ -1647,8 +1653,14 @@ function openDishPopup(name, price, diet, portion, desc, img){
 }
 
 function closeDishPopup(fromPopState = false){
-  if(fromPopState !== true) { history.back(); return; }
+  if(fromPopState !== true) {
+    if(dishOverlay.style.pointerEvents === 'none') return;
+    dishOverlay.style.pointerEvents = 'none';
+    history.back();
+    return;
+  }
   dishOverlay.classList.remove('on');
+  dishOverlay.style.pointerEvents = '';
 }
 
 /* Fullscreen image lightbox */
@@ -1673,9 +1685,19 @@ function openFullImg(src) {
   requestAnimationFrame(() => lb.style.opacity = '1');
 }
 function closeFullImg(fromPopState = false) {
-  if(fromPopState !== true) { history.back(); return; }
+  if(fromPopState !== true) {
+    const lb = document.getElementById('imgLightbox');
+    if(lb && lb.style.pointerEvents === 'none') return;
+    if(lb) lb.style.pointerEvents = 'none';
+    history.back();
+    return;
+  }
   const lb = document.getElementById('imgLightbox');
-  if (lb) { lb.style.opacity = '0'; setTimeout(() => lb.style.display = 'none', 200); }
+  if (lb) { 
+    lb.style.opacity = '0'; 
+    lb.style.pointerEvents = '';
+    setTimeout(() => lb.style.display = 'none', 200); 
+  }
 }
 
 /* ESC key handling */
