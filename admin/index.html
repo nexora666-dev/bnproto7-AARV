@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --teal: #197771;
@@ -429,6 +428,7 @@ select.field-input { cursor: pointer; }
 /* ══════════════════════════════════════════
    ADMIN PANEL JS
 ══════════════════════════════════════════ */
+const CLOUDFLARE_API = 'https://blue-nile-api.tupux3.workers.dev';
 
 /* ── Default menu data (same as index.html) ── */
 const DEFAULT_DATA=[
@@ -909,12 +909,6 @@ const DEFAULT_DATA=[
   }
 ];
 
-/* ── Supabase ── */
-const SUPABASE_URL = 'https://hcgangjurvsisqdrwkqo.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2FuZ2p1cnZzaXNxZHJ3a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMjA4ODMsImV4cCI6MjEwMTU5Njg4M30.Ipq0PSp2dbRVA9Ik8xQtscozPL4qz9rGoCS6NaFmHu8';
-// Supabase v2 CDN exposes the client on window.supabase
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 /* ── State ── */
 let menuData = [];
 let activeCatId = null;
@@ -922,18 +916,21 @@ let selectedItems = new Set();
 
 async function loadData(){
   try {
-    const { data, error } = await _supabase.from('global_menu').select('data').eq('id', 1).single();
+    const res = await fetch(CLOUDFLARE_API);
+    const { data, error } = await res.json();
     if (error) throw new Error(error.message);
     if (data && Array.isArray(data.data) && data.data.length > 0) {
       menuData = data.data;
     } else {
-      // Table row exists but is empty — seed defaults
       menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-      const { error: upsertErr } = await _supabase.from('global_menu').upsert({ id: 1, data: menuData });
-      if (upsertErr) throw new Error('Seed failed: ' + upsertErr.message);
+      await fetch(CLOUDFLARE_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer nexoraxbn' },
+        body: JSON.stringify(menuData)
+      });
     }
   } catch(e){
-    console.error('Supabase error:', e.message);
+    console.error('Data error:', e.message);
     document.getElementById('sidebar').innerHTML += `<div style="color:red;padding:12px;font-size:0.8rem;">DB Error: ${e.message}</div>`;
     menuData = JSON.parse(JSON.stringify(DEFAULT_DATA));
   }
@@ -955,10 +952,13 @@ async function saveData(){
   menuData.forEach(cat => {
     if(cat.rows) cat.count = cat.rows.length + ' Items';
   });
-  const { error } = await _supabase.from('global_menu').upsert({ id: 1, data: menuData });
-  if (error) {
-    showToast('Save failed: ' + error.message, 'error');
-    console.error('Supabase save error:', error);
+  const res = await fetch(CLOUDFLARE_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer nexoraxbn' },
+    body: JSON.stringify(menuData)
+  });
+  if (!res.ok) {
+    showToast('Save failed', 'error');
     return false;
   }
   return true;
@@ -1076,13 +1076,6 @@ function buildContent(){
   `;
 
   document.getElementById('editCatName').addEventListener('change', async (e) => {
-    cat.name = e.target.value;
-    await saveData();
-    buildSidebar();
-  });
-
-  // ── Category name / subtitle inline editing ──
-  document.getElementById('editCatName').addEventListener('change', async (e) => {
     cat.name = e.target.value.trim() || cat.name;
     await saveData();
     buildSidebar();
@@ -1093,11 +1086,9 @@ function buildContent(){
     await saveData();
   });
 
-  // ── Add Item ──
   document.getElementById('btnAddItem').addEventListener('click', async () => {
     const newRows = getRows(cat);
     newRows.push({ n: 'New Item', p: '₹0', d: 'v', desc: '' });
-    // Sort high‑to‑low by price after insertion
     newRows.sort((a, b) => {
       const pa = parseFloat(a.p.replace(/[^\d.]/g, '')) || 0;
       const pb = parseFloat(b.p.replace(/[^\d.]/g, '')) || 0;
@@ -1110,13 +1101,11 @@ function buildContent(){
     showToast('Item added');
   });
 
-  // ── Move Selected ──
   document.getElementById('btnMoveSelected').addEventListener('click', () => {
     if(selectedItems.size === 0){ showToast('Select items first', 'error'); return; }
     openMoveModal();
   });
 
-  // ── Delete Selected Items ──
   document.getElementById('btnDeleteSelected').addEventListener('click', async () => {
     if(selectedItems.size === 0){ showToast('Select items first', 'error'); return; }
     if(!confirm(`Delete ${selectedItems.size} item(s)?`)) return;
@@ -1130,9 +1119,8 @@ function buildContent(){
     showToast('Items deleted & saved');
   });
 
-  // ── Delete Entire Category ──
   document.getElementById('btnDeleteCat').addEventListener('click', async () => {
-    if(!confirm(`Delete the entire "${cat.name}" category and ALL its items? This cannot be undone.`)) return;
+    if(!confirm(`Delete the entire "${cat.name}" category and ALL its items?`)) return;
     const idx = menuData.findIndex(c => c.id === activeCatId);
     if(idx !== -1) menuData.splice(idx, 1);
     activeCatId = menuData[0]?.id || null;
@@ -1144,7 +1132,7 @@ function buildContent(){
   });
 
   const oldGrid = document.getElementById('itemsGrid');
-  const newGrid = oldGrid.cloneNode(false); // clone without children = kills all old listeners
+  const newGrid = oldGrid.cloneNode(false);
   oldGrid.parentNode.replaceChild(newGrid, oldGrid);
   const grid = newGrid;
 
@@ -1155,14 +1143,7 @@ function buildContent(){
     card.innerHTML = `
       <div class="item-top">
         <div class="item-photo" data-idx="${idx}">
-          ${item.img
-            ? `<img src="${item.img}" alt="${item.n}">`
-            : `<div class="photo-placeholder">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                Upload
-               </div>`
-          }
-          <input type="file" accept="image/*" style="display:none;" data-idx="${idx}">
+          ${item.img ? `<img src="${item.img}" alt="${item.n}">` : `<div class="photo-placeholder"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Upload</div>`}
         </div>
         <div class="item-info">
           <div class="field-row">
@@ -1194,27 +1175,16 @@ function buildContent(){
           <span>Select</span>
         </label>
         <div class="action-btns">
-          ${item.img ? `<button class="action-btn danger" title="Delete Image" data-action="delimg" data-idx="${idx}" style="font-size:0.7rem;padding:4px 8px;gap:4px;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Del Img</button>` : ''}
-          <button class="action-btn" title="Move up" data-action="up" data-idx="${idx}">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
-          </button>
-          <button class="action-btn" title="Move down" data-action="down" data-idx="${idx}">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </button>
-          <button class="action-btn" title="Move to category" data-action="move" data-idx="${idx}">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4"/></svg>
-          </button>
-          <button class="action-btn danger" title="Delete Item" data-action="del" data-idx="${idx}">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
+          <button class="action-btn" title="Move up" data-action="up" data-idx="${idx}"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button>
+          <button class="action-btn" title="Move down" data-action="down" data-idx="${idx}"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button>
+          <button class="action-btn" title="Move to category" data-action="move" data-idx="${idx}"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4"/></svg></button>
+          <button class="action-btn danger" title="Delete Item" data-action="del" data-idx="${idx}"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
         </div>
       </div>
     `;
     grid.appendChild(card);
   });
 
-  // Fresh event listeners — only one set, bound to current cat
-  // Debounced auto-save: fires 1.2s after user stops typing
   let saveTimer = null;
   function debouncedSave() {
     clearTimeout(saveTimer);
@@ -1227,20 +1197,18 @@ function buildContent(){
     const idx = parseInt(el.dataset.idx);
     const r = getRows(cat);
     if(r[idx]) r[idx][el.dataset.field] = el.value;
-    setRows(cat, r); // apply changes to hero items
-    debouncedSave(); // auto-save every rename/price/desc change
+    setRows(cat, r);
+    debouncedSave();
   });
 
   grid.addEventListener('change', async e => {
     const el = e.target;
-    // Checkbox select — no save needed
     if(el.type === 'checkbox' && el.dataset.selidx !== undefined){
       const idx = parseInt(el.dataset.selidx);
       if(el.checked) selectedItems.add(idx); else selectedItems.delete(idx);
       el.closest('.admin-item').classList.toggle('selected', el.checked);
       return;
     }
-    // Diet dropdown — save immediately
     if(el.dataset.field === 'd'){
       const idx = parseInt(el.dataset.idx);
       const r = getRows(cat);
@@ -1249,50 +1217,12 @@ function buildContent(){
       saveData().then(() => showToast('Diet updated'));
       return;
     }
-    // File input (photo)
-    if(el.type === 'file' && el.dataset.idx !== undefined){
-      const idx = parseInt(el.dataset.idx);
-      const file = el.files[0];
-      if(!file) return;
-
-      showToast('Uploading photo...');
-
-      let imageUrl = null;
-      try {
-        const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-        const { data: upData, error: upErr } = await _supabase.storage.from('menu-images').upload(fileName, file, {
-          cacheControl: '31536000',
-          upsert: true
-        });
-        if (upErr) throw upErr;
-        const { data: publicUrlData } = _supabase.storage.from('menu-images').getPublicUrl(fileName);
-        imageUrl = publicUrlData.publicUrl;
-        showToast('Photo uploaded to CDN!');
-      } catch(storageErr) {
-        showToast('Upload failed: ' + (storageErr.message || storageErr), 'error');
-        console.error(storageErr);
-        return;
-      }
-
-      const r = getRows(cat);
-      if(r[idx]) r[idx].img = imageUrl;
-      setRows(cat, r);
-      showToast('Saving...');
-      const saveSuccess = await saveData();
-      buildContent();
-      if(saveSuccess) {
-        showToast('\u2705 Photo saved!');
-      } else {
-        showToast('\u274C Failed to save photo to DB', 'error');
-      }
-    }
   });
 
   grid.addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
     if(!btn) {
-      const photo = e.target.closest('.item-photo');
-      if(photo){ photo.querySelector('input[type="file"]').click(); }
+      if(e.target.closest('.item-photo')) { alert("Image upload is temporarily disabled during migration."); }
       return;
     }
     const action = btn.dataset.action;
@@ -1306,12 +1236,6 @@ function buildContent(){
       selectedItems.clear();
       saveData().then(() => showToast('Item deleted'));
       buildContent(); buildSidebar();
-    }
-    if(action === 'delimg'){
-      if(!confirm('Remove the photo from this item?')) return;
-      if(r[idx]) delete r[idx].img;
-      setRows(cat, r);
-      saveData().then(() => { showToast('Photo removed'); buildContent(); });
     }
     if(action === 'up' && idx > 0){
       [r[idx-1], r[idx]] = [r[idx], r[idx-1]];
@@ -1379,34 +1303,14 @@ function closeMoveModal(){
 document.getElementById('moveModalClose').addEventListener('click', closeMoveModal);
 document.getElementById('moveModal').addEventListener('click', e => { if(e.target === e.currentTarget) closeMoveModal(); });
 
-/* ── Sort All Categories High → Low ── */
+/* ── Utilities ── */
 function parsePrice(p) {
   if (!p) return 0;
-  // Extract first number from strings like "₹4,400", "₹85", "₹165/- Per Glass"
   const match = p.replace(/,/g, '').match(/[\d]+(\.\d+)?/);
   return match ? parseFloat(match[0]) : 0;
 }
 
-/* ── Migrate Base64 Images to Supabase Storage ── */
 document.getElementById('migrateBtn').addEventListener('click', async () => {
-  if (!confirm('This will upload all existing Base64 photos to cloud storage and replace them with fast URLs. Continue?')) return;
-  let total = 0, done = 0;
-  // Count items with base64 images
-  menuData.forEach(cat => {
-    const rows = getRows(cat);
-    rows.forEach(r => { if (r.img && r.img.startsWith('data:')) total++; });
-    if (cat.item && cat.item.img && cat.item.img.startsWith('data:')) total++;
-  });
-  if (total === 0) { showToast('No Base64 images found — already migrated!'); return; }
-  showToast(`Migrating ${total} images...`);
-  for (const cat of menuData) {
-    const rows = getRows(cat);
-    for (const r of rows) {
-      if (r.img && r.img.startsWith('data:')) {
-        try {
-          // Convert base64 to blob
-          const res = await fetch(r.img);
-          const blob = await res.blob();
           const ext = blob.type.split('/')[1] || 'jpg';
           const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
           const { error } = await _supabase.storage.from('menu-images').upload(fileName, blob, { cacheControl: '31536000' });
