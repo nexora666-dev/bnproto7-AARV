@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Removed Supabase SDK -->
 <style>
 :root {
   /* ── PALETTE ─────────────────────────── */
@@ -1413,7 +1413,8 @@ let D=[
       {n:"Toast",p:"₹85",d:"v",desc:"Crunchy baked milk toast slices."},
       {n:"White Bread",p:"₹33",d:"v",desc:"Freshly baked soft white bread loaf."}
     ]
-  },
+  }
+,
 
   {id:"bakery-pack",name:"BAKERY PACK",sub:"Fresh from the Oven",ico:"i-bakery",count:"17 Items",
    rows:[
@@ -1436,10 +1437,8 @@ let D=[
      {n:"White Bread",p:"₹33",d:"v",desc:"Freshly baked soft white bread loaf."}
    ]}
 ];
-// Supabase config
-const SUPABASE_URL = 'https://hcgangjurvsisqdrwkqo.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2FuZ2p1cnZzaXNxZHJ3a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMjA4ODMsImV4cCI6MjEwMTU5Njg4M30.Ipq0PSp2dbRVA9Ik8xQtscozPL4qz9rGoCS6NaFmHu8';
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// CLOUDFLARE API URL
+const CLOUDFLARE_API = 'https://blue-nile-api.tupux3.workers.dev';
 
 
 
@@ -1715,8 +1714,9 @@ function sortMenuData() {
 
 async function loadMenuFromSupabase() {
   try {
-    const { data, error } = await _supabase.from('global_menu').select('data').eq('id', 1).single();
-    if (error) throw error;
+    const res = await fetch(CLOUDFLARE_API);
+    const { data, error } = await res.json();
+    if (error) throw new Error(error.message);
     if (data && Array.isArray(data.data) && data.data.length > 0) {
       D = data.data;
       sortMenuData();
