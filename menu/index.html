@@ -1481,13 +1481,17 @@ OL.addEventListener('click',e=>{if(e.target===OL)closeCategoryModal();});
 // Track which category is currently open so we can re-render after Supabase loads
 let _openCatId = null;
 
-let modalStateStack = 0;
-function pushModalState() {
-  history.pushState({ modalIndex: ++modalStateStack }, '');
+// ── Modal history: one entry for the whole session ──
+let _modalOpen = false;
+function _ensureModalHistory() {
+  if (!_modalOpen) {
+    _modalOpen = true;
+    history.pushState({ modal: true }, '');
+  }
 }
 
 function openCategoryModal(id){
-  if (!OL.classList.contains('on')) pushModalState();
+  _ensureModalHistory();
   _openCatId = id;
   const c=D.find(x=>x.id===id);if(!c)return;
   pTitle.textContent=c.name;
@@ -1513,16 +1517,17 @@ function openCategoryModal(id){
 
 function closeCategoryModal(fromPopState = false){
   if(fromPopState !== true) {
-    if(OL.style.pointerEvents === 'none') return;
-    OL.style.pointerEvents = 'none';
+    if(!_modalOpen) return;
     history.back();
     return;
   }
+  _modalOpen = false;
   _openCatId = null;
+  dishOverlay.classList.remove('on');
+  const lb = document.getElementById('imgLightbox');
+  if(lb) { lb.style.opacity='0'; setTimeout(()=>lb.style.display='none',150); }
   OL.classList.remove('on');
-  OL.style.pointerEvents = '';
   document.body.style.overflow='';
-  // Remove active class from pills
   const pills = document.querySelectorAll('.pill-btn');
   pills.forEach(p => p.classList.remove('active'));
 }
@@ -1600,7 +1605,6 @@ document.getElementById('dishCloseBtn').addEventListener('click', closeDishPopup
 dishOverlay.addEventListener('click', (e) => { if(e.target === dishOverlay) closeDishPopup(); });
 
 function openDishPopup(name, price, diet, portion, desc, img){
-  pushModalState();
   dTitle.textContent = name;
   dPrice.textContent = price;
   dPortionBadge.textContent = portion || 'Standard Portion';
@@ -1653,19 +1657,14 @@ function openDishPopup(name, price, diet, portion, desc, img){
 }
 
 function closeDishPopup(fromPopState = false){
-  if(fromPopState !== true) {
-    if(dishOverlay.style.pointerEvents === 'none') return;
-    dishOverlay.style.pointerEvents = 'none';
-    history.back();
-    return;
-  }
+  // Just close the overlay, don't touch history (one-entry model)
   dishOverlay.classList.remove('on');
-  dishOverlay.style.pointerEvents = '';
+  const lb = document.getElementById('imgLightbox');
+  if(lb) { lb.style.opacity='0'; setTimeout(()=>lb.style.display='none',150); }
 }
 
 /* Fullscreen image lightbox */
 function openFullImg(src) {
-  pushModalState();
   let lb = document.getElementById('imgLightbox');
   if (!lb) {
     lb = document.createElement('div');
@@ -1684,18 +1683,10 @@ function openFullImg(src) {
   lb.style.display = 'flex';
   requestAnimationFrame(() => lb.style.opacity = '1');
 }
-function closeFullImg(fromPopState = false) {
-  if(fromPopState !== true) {
-    const lb = document.getElementById('imgLightbox');
-    if(lb && lb.style.pointerEvents === 'none') return;
-    if(lb) lb.style.pointerEvents = 'none';
-    history.back();
-    return;
-  }
+function closeFullImg() {
   const lb = document.getElementById('imgLightbox');
   if (lb) { 
     lb.style.opacity = '0'; 
-    lb.style.pointerEvents = '';
     setTimeout(() => lb.style.display = 'none', 200); 
   }
 }
@@ -1710,12 +1701,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('popstate', (e) => {
-  modalStateStack--;
-  if(document.getElementById('imgLightbox')?.style.display === 'flex') {
-    closeFullImg(true);
-  } else if(dishOverlay.classList.contains('on')) {
-    closeDishPopup(true);
-  } else if(OL.classList.contains('on')) {
+  // One-entry model: popstate always means close all modals
+  if(OL.classList.contains('on')) {
     closeCategoryModal(true);
   }
 });
