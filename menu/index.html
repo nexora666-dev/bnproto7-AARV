@@ -1483,7 +1483,13 @@ OL.addEventListener('click',e=>{if(e.target===OL)closeCategoryModal();});
 // Track which category is currently open so we can re-render after Supabase loads
 let _openCatId = null;
 
+let modalStateStack = 0;
+function pushModalState() {
+  history.pushState({ modalIndex: ++modalStateStack }, '');
+}
+
 function openCategoryModal(id){
+  if (!OL.classList.contains('on')) pushModalState();
   _openCatId = id;
   const c=D.find(x=>x.id===id);if(!c)return;
   pTitle.textContent=c.name;
@@ -1507,7 +1513,8 @@ function openCategoryModal(id){
   document.body.style.overflow='hidden';
 }
 
-function closeCategoryModal(){
+function closeCategoryModal(fromPopState = false){
+  if(fromPopState !== true) { history.back(); return; }
   _openCatId = null;
   OL.classList.remove('on');
   document.body.style.overflow='';
@@ -1589,6 +1596,7 @@ document.getElementById('dishCloseBtn').addEventListener('click', closeDishPopup
 dishOverlay.addEventListener('click', (e) => { if(e.target === dishOverlay) closeDishPopup(); });
 
 function openDishPopup(name, price, diet, portion, desc, img){
+  pushModalState();
   dTitle.textContent = name;
   dPrice.textContent = price;
   dPortionBadge.textContent = portion || 'Standard Portion';
@@ -1640,12 +1648,14 @@ function openDishPopup(name, price, diet, portion, desc, img){
   dishOverlay.classList.add('on');
 }
 
-function closeDishPopup(){
+function closeDishPopup(fromPopState = false){
+  if(fromPopState !== true) { history.back(); return; }
   dishOverlay.classList.remove('on');
 }
 
 /* Fullscreen image lightbox */
 function openFullImg(src) {
+  pushModalState();
   let lb = document.getElementById('imgLightbox');
   if (!lb) {
     lb = document.createElement('div');
@@ -1664,7 +1674,8 @@ function openFullImg(src) {
   lb.style.display = 'flex';
   requestAnimationFrame(() => lb.style.opacity = '1');
 }
-function closeFullImg() {
+function closeFullImg(fromPopState = false) {
+  if(fromPopState !== true) { history.back(); return; }
   const lb = document.getElementById('imgLightbox');
   if (lb) { lb.style.opacity = '0'; setTimeout(() => lb.style.display = 'none', 200); }
 }
@@ -1675,6 +1686,17 @@ document.addEventListener('keydown', (e) => {
     if(document.getElementById('imgLightbox')?.style.display === 'flex') closeFullImg();
     else if(dishOverlay.classList.contains('on')) closeDishPopup();
     else if(OL.classList.contains('on')) closeCategoryModal();
+  }
+});
+
+window.addEventListener('popstate', (e) => {
+  modalStateStack--;
+  if(document.getElementById('imgLightbox')?.style.display === 'flex') {
+    closeFullImg(true);
+  } else if(dishOverlay.classList.contains('on')) {
+    closeDishPopup(true);
+  } else if(OL.classList.contains('on')) {
+    closeCategoryModal(true);
   }
 });
 
