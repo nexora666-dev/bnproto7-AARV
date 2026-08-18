@@ -765,6 +765,49 @@ body {
   .p-body { padding: 18px; }
   .dish-content { padding: 22px 18px 28px; }
 }
+
+/* ── Nexora Footer Branding ──────────────────── */
+.nexora-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 24px 64px;
+  margin-top: 40px;
+  border-top: 1px dashed var(--beige-dark);
+}
+
+.nexora-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text-mid);
+  transition: var(--tr);
+  padding: 10px 20px;
+  border-radius: 50px;
+  background: var(--white);
+  border: 1px solid var(--beige-dark);
+  box-shadow: var(--sh-sm);
+  cursor: pointer;
+}
+
+.nexora-link:hover {
+  color: var(--teal);
+  border-color: var(--teal-mid);
+  box-shadow: var(--sh-md);
+  transform: translateY(-2px);
+}
+
+.nexora-logo {
+  height: 18px;
+  width: auto;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}
 </style>
 </head>
 <body>
@@ -805,6 +848,14 @@ body {
     <span class="quick-hint">Tap category to explore · Tap dish for details</span>
   </div>
   <div class="bento" id="bento"></div>
+
+  <!-- Footer Branding Section -->
+  <footer class="nexora-footer">
+    <a href="https://nexoracult.in/bluenilevisit" target="_blank" rel="noopener noreferrer" class="nexora-link">
+      <span>Built by Nexora</span>
+      <img src="/images/nexora-bg.png" alt="Nexora Logo" class="nexora-logo">
+    </a>
+  </footer>
 </main>
 
 <!-- ══════════════════════════════════
@@ -1413,7 +1464,8 @@ let D=[
       {n:"Toast",p:"₹85",d:"v",desc:"Crunchy baked milk toast slices."},
       {n:"White Bread",p:"₹33",d:"v",desc:"Freshly baked soft white bread loaf."}
     ]
-  },
+  }
+,
 
   {id:"bakery-pack",name:"BAKERY PACK",sub:"Fresh from the Oven",ico:"i-bakery",count:"17 Items",
    rows:[
