@@ -268,6 +268,50 @@ body {
   margin-bottom: 52px;
 }
 
+.menu-slideshow {
+  position: relative;
+  width: 100%;
+  height: clamp(190px, 34vw, 360px);
+  margin: 0 auto 34px;
+  overflow: hidden;
+  border: 1px solid var(--beige-dark);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--teal), #0D4F4A);
+  box-shadow: var(--sh-md);
+}
+.menu-slideshow-image {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  opacity: 1; transition: opacity .45s ease;
+}
+.menu-slideshow-image.is-changing { opacity: .2; }
+.menu-slide-caption {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 38px 64px 18px;
+  color: #fff; font-size: 1rem; font-weight: 600;
+  background: linear-gradient(transparent, rgba(0,0,0,.72));
+  text-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+.menu-slide-control {
+  position: absolute; top: 50%; z-index: 2; transform: translateY(-50%);
+  display: grid; place-items: center; width: 42px; height: 42px;
+  border: 1px solid rgba(255,255,255,.55); border-radius: 50%;
+  color: #fff; background: rgba(0,0,0,.35); font-size: 1.5rem;
+  cursor: pointer; backdrop-filter: blur(5px);
+}
+.menu-slide-control:hover { background: rgba(0,0,0,.62); }
+.menu-slide-prev { left: 14px; }
+.menu-slide-next { right: 14px; }
+.menu-slide-empty {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: rgba(255,255,255,.85); font-size: .9rem; letter-spacing: .04em;
+}
+.menu-slideshow [hidden] { display: none !important; }
+@media(max-width: 480px) {
+  .menu-slideshow { height: 210px; border-radius: 14px; margin-bottom: 24px; }
+  .menu-slide-caption { padding: 32px 54px 14px; font-size: .9rem; }
+  .menu-slide-control { width: 36px; height: 36px; }
+}
+
 .section-title-mini {
   font-family: var(--serif);
   font-size: 2.4rem; font-weight: 500;
@@ -842,10 +886,13 @@ body {
      MAIN MENU SECTION
 ══════════════════════════════════ -->
 <main class="menu-wrap">
-  <div class="section-head-mini">
-    <h2 class="section-title-mini">Menu Categories</h2>
-    <span class="quick-hint">Tap category to explore · Tap dish for details</span>
-  </div>
+  <section class="menu-slideshow" id="menuSlideshow" aria-label="Blue Nile menu photo slideshow">
+    <img class="menu-slideshow-image" id="menuSlideImage" alt="">
+    <div class="menu-slide-caption" id="menuSlideCaption" aria-live="polite"></div>
+    <div class="menu-slide-empty" id="menuSlideEmpty">Loading menu photos…</div>
+    <button class="menu-slide-control menu-slide-prev" id="menuSlidePrev" type="button" aria-label="Previous photo" hidden>‹</button>
+    <button class="menu-slide-control menu-slide-next" id="menuSlideNext" type="button" aria-label="Next photo" hidden>›</button>
+  </section>
   <div class="bento" id="bento"></div>
 
   <!-- Footer Branding Section -->
@@ -1514,6 +1561,58 @@ function buildBento(){
   g.appendChild(fragment);
 }
 
+/* Cycle through every menu photo supplied by the database. */
+let _menuPhotos = [];
+let _menuPhotoIndex = 0;
+let _menuPhotoTimer = null;
+function renderMenuSlideshow(){
+  const image = document.getElementById('menuSlideImage');
+  const caption = document.getElementById('menuSlideCaption');
+  const empty = document.getElementById('menuSlideEmpty');
+  const previous = document.getElementById('menuSlidePrev');
+  const next = document.getElementById('menuSlideNext');
+  if(!image || !caption || !empty || !previous || !next) return;
+  if(_menuPhotoTimer) clearInterval(_menuPhotoTimer);
+  _menuPhotos = [];
+  const seen = new Set();
+  D.forEach(category => {
+    const items = [...(Array.isArray(category.rows) ? category.rows : [])];
+    if(category.item) items.unshift({n: category.item.name, img: category.item.img});
+    items.forEach(item => {
+      if(typeof item.img === 'string' && item.img.trim() && !seen.has(item.img)) {
+        seen.add(item.img);
+        _menuPhotos.push({src: item.img, name: item.n || item.name || category.name || 'Blue Nile'});
+      }
+    });
+  });
+  if(!_menuPhotos.length){
+    image.hidden = true; caption.textContent = ''; empty.hidden = false;
+    empty.textContent = 'Menu photos will appear here';
+    previous.hidden = true; next.hidden = true; return;
+  }
+  _menuPhotoIndex = 0; image.hidden = false; empty.hidden = true;
+  previous.hidden = _menuPhotos.length < 2; next.hidden = _menuPhotos.length < 2;
+  const showPhoto = index => {
+    _menuPhotoIndex = (index + _menuPhotos.length) % _menuPhotos.length;
+    const photo = _menuPhotos[_menuPhotoIndex];
+    image.classList.add('is-changing');
+    const preload = new Image();
+    preload.onload = () => {
+      image.src = photo.src; image.alt = photo.name; caption.textContent = photo.name;
+      requestAnimationFrame(() => image.classList.remove('is-changing'));
+    };
+    preload.onerror = () => {
+      caption.textContent = `${photo.name} · Photo unavailable`;
+      image.classList.remove('is-changing');
+    };
+    preload.src = photo.src;
+  };
+  previous.onclick = () => showPhoto(_menuPhotoIndex - 1);
+  next.onclick = () => showPhoto(_menuPhotoIndex + 1);
+  showPhoto(0);
+  if(_menuPhotos.length > 1) _menuPhotoTimer = setInterval(() => showPhoto(_menuPhotoIndex + 1), 4000);
+}
+
 /* ═══════════════════════════════
    MODAL 1: CATEGORY POPUP
 ═══════════════════════════════ */
@@ -1791,6 +1890,7 @@ window.addEventListener('DOMContentLoaded', () => {
   sortMenuData();
   buildPills();
   buildBento();
+  renderMenuSlideshow();
 
   // 2. Fetch the latest from Supabase in the background
   loadMenuFromSupabase().then(() => {
@@ -1801,6 +1901,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(bento) bento.innerHTML = '';
     buildPills();
     buildBento();
+    renderMenuSlideshow();
     // 4. If a category modal is open, re-render it with fresh data (so images appear)
     if(_openCatId) openCategoryModal(_openCatId);
   });
