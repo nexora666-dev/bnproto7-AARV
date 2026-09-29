@@ -281,9 +281,8 @@ body {
 }
 .menu-slideshow-image {
   display: block; width: 100%; height: 100%; object-fit: cover;
-  opacity: 1; transition: opacity .45s ease;
+  opacity: 1; transition: none;
 }
-.menu-slideshow-image.is-changing { opacity: .2; }
 .menu-slide-caption {
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: 38px 64px 18px;
@@ -1627,17 +1626,14 @@ function renderMenuSlideshow(){
   const showPhoto = index => {
     _menuPhotoIndex = (index + _menuPhotos.length) % _menuPhotos.length;
     const photo = _menuPhotos[_menuPhotoIndex];
-    image.classList.add('is-changing');
     const preload = new Image();
     preload.onload = () => {
       image.src = photo.src;
       image.alt = photo.name;
       caption.textContent = photo.name;
-      requestAnimationFrame(() => image.classList.remove('is-changing'));
     };
     preload.onerror = () => {
       caption.textContent = `${photo.name} · Photo unavailable`;
-      image.classList.remove('is-changing');
     };
     preload.src = photo.src;
   };
