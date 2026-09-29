@@ -288,6 +288,7 @@ body {
 .menu-search-toggle:hover { background: var(--primary-dark); transform: translateY(-2px); }
 .menu-search-toggle svg { width: 21px; height: 21px; }
 .menu-search-toggle span { font: 500 .82rem var(--sans); white-space: nowrap; }
+.menu-search.is-open .menu-search-toggle { opacity: 0; pointer-events: none; }
 .menu-search-panel {
   position: absolute; right: 0; bottom: calc(100% + 10px);
   width: min(360px, calc(100vw - 32px));
@@ -297,9 +298,10 @@ body {
 .menu-search-panel[hidden] { display: none; }
 .menu-search-panel .menu-search-control { box-shadow: none; }
 .menu-search-panel .menu-search-results {
-  position: static; max-height: min(320px, 50vh); margin-top: 6px;
+  position: static; max-height: min(200px, 36vh); margin-top: 6px;
   padding: 4px 0 0; border: 0; border-radius: 0; box-shadow: none;
 }
+.menu-search-result { padding: 9px 10px; }
 .menu-search-control {
   display: flex; align-items: center; gap: 10px;
   padding: 0 14px; min-height: 46px;
@@ -315,6 +317,7 @@ body {
   font: 400 .9rem var(--sans);
 }
 .menu-search-input::placeholder { color: var(--text-muted); }
+.menu-search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
 .menu-search-clear {
   flex: 0 0 28px; width: 28px; height: 28px; border: 0;
   border-radius: 50%; background: var(--beige-light); color: var(--text-mid);
@@ -333,9 +336,17 @@ body {
   background: transparent; color: var(--text-dark); text-align: left; cursor: pointer;
 }
 .menu-search-result:hover, .menu-search-result:focus-visible { background: var(--primary-light); outline: 0; }
-.menu-search-result-name { display: block; font-size: .88rem; font-weight: 600; }
+.menu-search-result-name {
+  display: block; font-family: var(--serif); font-size: 1rem;
+  line-height: 1.15; font-weight: 600;
+}
 .menu-search-result-category { display: block; margin-top: 2px; color: var(--text-light); font-size: .72rem; }
-.menu-search-result-price { flex: 0 0 auto; color: var(--teal); font-size: .82rem; font-weight: 700; }
+.menu-search-result-price {
+  flex: 0 0 auto; padding: 5px 10px;
+  border: 1px solid rgba(40,172,163,.22); border-radius: 999px;
+  background: var(--primary-light); color: var(--teal);
+  font: 600 .78rem var(--sans); white-space: nowrap;
+}
 .menu-search-empty { padding: 14px 12px; color: var(--text-light); font-size: .85rem; }
 
 /* ═══════════════════════════════════
@@ -964,7 +975,7 @@ body {
     <div class="menu-search-control">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
       <input class="menu-search-input" id="menuSearchInput" type="search" placeholder="Search dishes or categories…" autocomplete="off" aria-label="Search menu dishes" aria-controls="menuSearchResults" aria-expanded="false">
-      <button class="menu-search-clear" id="menuSearchClear" type="button" aria-label="Clear search" hidden>×</button>
+      <button class="menu-search-clear" id="menuSearchClear" type="button" aria-label="Close search">×</button>
     </div>
     <div class="menu-search-results" id="menuSearchResults" role="listbox" hidden></div>
     </div>
@@ -1676,12 +1687,14 @@ function initDishSearch(){
   if(!wrapper || !toggle || !panel || !input || !clear || !results) return;
   const closeSearch = () => {
     panel.hidden = true;
+    wrapper.classList.remove('is-open');
     toggle.setAttribute('aria-expanded', 'false');
   };
   toggle.addEventListener('click', () => {
     panel.hidden = !panel.hidden;
+    wrapper.classList.toggle('is-open', !panel.hidden);
     toggle.setAttribute('aria-expanded', String(!panel.hidden));
-    if(!panel.hidden) input.focus();
+    if(!panel.hidden) { input.focus(); if(input.value.trim()) input.dispatchEvent(new Event('input')); }
   });
   const hideResults = () => {
     results.hidden = true;
@@ -1689,7 +1702,6 @@ function initDishSearch(){
   };
   const search = () => {
     const query = input.value.trim().toLocaleLowerCase();
-    clear.hidden = !query;
     results.replaceChildren();
     if(!query){ hideResults(); return; }
     const matches = [];
@@ -1716,8 +1728,11 @@ function initDishSearch(){
         const name = document.createElement('span'); name.className = 'menu-search-result-name'; name.textContent = match.name;
         const category = document.createElement('span'); category.className = 'menu-search-result-category'; category.textContent = match.categoryName;
         label.append(name, category);
-        const price = document.createElement('span'); price.className = 'menu-search-result-price'; price.textContent = match.price;
-        option.append(label, price);
+        option.append(label);
+        if(match.price) {
+          const price = document.createElement('span'); price.className = 'menu-search-result-price'; price.textContent = match.price;
+          option.append(price);
+        }
         option.addEventListener('click', () => {
           hideResults(); closeSearch(); openCategoryModal(match.category.id);
           openDishPopup(match.name, match.price, match.item.d || 'v', match.item.note || match.item.v || 'Standard Portion', match.item.desc || '', match.item.img || '');
@@ -1733,7 +1748,7 @@ function initDishSearch(){
     if(event.key === 'Enter') results.querySelector('.menu-search-result')?.click();
     if(event.key === 'Escape') { hideResults(); closeSearch(); toggle.focus(); }
   });
-  clear.addEventListener('click', () => { input.value = ''; search(); input.focus(); });
+  clear.addEventListener('click', () => { hideResults(); closeSearch(); toggle.focus(); });
   document.addEventListener('click', event => { if(!event.target.closest('#menuSearch')) { hideResults(); closeSearch(); } });
 }
 
