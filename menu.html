@@ -682,6 +682,16 @@ body {
   color: var(--teal);
   box-shadow: 0 3px 10px rgba(64,224,208,.3);
 }
+.item-photo-btn {
+  flex: 0 0 30px; width: 30px; height: 30px; padding: 0;
+  display: grid; place-items: center;
+  border: 1px solid var(--beige-dark); border-radius: 50%;
+  color: var(--teal); background: var(--beige-light);
+  cursor: pointer; position: relative; z-index: 2;
+  transition: var(--tr);
+}
+.item-photo-btn svg { width: 15px; height: 15px; }
+.item-photo-btn:hover { border-color: var(--primary); background: var(--primary-light); }
 
 .click-hint-icon {
   color: var(--primary-dark); font-size: .82rem; margin-left: 2px;
@@ -1877,8 +1887,23 @@ function closeCategoryModal(){
   pills.forEach(p => p.classList.remove('active'));
 }
 
+function wirePhotoPreviewButtons(rows){
+  pBody.querySelectorAll('[data-photo-index]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      const row = rows[Number(button.dataset.photoIndex)];
+      if(row?.img) openFullImg(row.img);
+    });
+  });
+}
+
+function photoPreviewButton(index){
+  return `<button class="item-photo-btn" type="button" data-photo-index="${index}" aria-label="View dish photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>`;
+}
+
 function renderHero(c){
   const it=c.item;
+  _currentCatRows = [{img: it.img || ''}];
   pBody.innerHTML=`
     <div class="irow" style="background:var(--g8);border:1.5px solid var(--g4);padding:16px;" onclick="openDishPopup('${(it.name||'').replace(/'/g, "\\'")}', '${it.price||''}', '${it.d||'v'}', '${(it.note||'Full Portion').replace(/'/g, "\\'")}', '${(it.desc||'').replace(/'/g, "\\'")}', '${it.img||''}')">
       <span class="ndot"></span>
@@ -1887,19 +1912,24 @@ function renderHero(c){
         <span class="ivariant">${it.note} · Tap for dish photo & details</span>
       </div>
       <span class="iprice" style="font-size:1.2rem">${it.price}</span>
+      ${it.img ? photoPreviewButton(0) : ''}
       <span class="click-hint-icon">➔</span>
     </div>`;
+  wirePhotoPreviewButtons(_currentCatRows);
 }
 
 function renderFlat(c){
-  const rows=c.rows.map(r=>`
+  _currentCatRows = c.rows || [];
+  const rows=_currentCatRows.map((r,i)=>`
     <div class="irow" onclick="openDishPopup('${(r.n||'').replace(/'/g, "\\'")}', '${c.flatP}', '${r.d||'v'}', 'Single Portion', '${(r.desc||'Authentic dish').replace(/'/g, "\\'")}', '${r.img||''}')">
       ${r.d==='v'?'<span class="vdot"></span>':'<span class="ndot"></span>'}
       <span class="iname">${r.n}</span>
       <span class="iprice">${c.flatP}</span>
+      ${r.img ? photoPreviewButton(i) : ''}
       <span class="click-hint-icon">➔</span>
     </div>`).join('');
   pBody.innerHTML=`<div style="background:var(--g8);padding:10px 16px;border-radius:10px;margin-bottom:12px;font-size:0.85rem;color:var(--g1);font-weight:600">All Chinese Dishes Flat ${c.flatP}</div><div class="items-grid">${rows}</div>`;
+  wirePhotoPreviewButtons(_currentCatRows);
 }
 
 function renderAsk(c){
@@ -1925,9 +1955,11 @@ function renderList(c){
       <span class="iname">${r.n}</span>
       <span class="ileader"></span>
       <span class="iprice">${r.p}</span>
+      ${r.img ? photoPreviewButton(i) : ''}
       <span class="click-hint-icon">&#10148;</span>
     </div>`).join('');
   pBody.innerHTML=`<div class="items-grid">${rows}</div>`;
+  wirePhotoPreviewButtons(_currentCatRows);
 }
 
 function _openRow(i){
