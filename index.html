@@ -212,14 +212,35 @@ body {
   padding: 4px 0;
 }
 
-.nav-pills-container {
+.nav-pills-shell {
   width: 100%; max-width: 1100px;
   margin: 0 auto;
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 10px;
+  min-height: 44px;
+}
+.nav-pills-container {
+  flex: 1; min-width: 0;
   display: flex; gap: 8px; overflow-x: auto;
-  padding: 10px 20px;
+  padding: 10px 4px;
   scrollbar-width: none;
+  scroll-behavior: smooth;
+  border-radius: 999px;
+  clip-path: inset(0 round 999px);
 }
 .nav-pills-container::-webkit-scrollbar { display: none; }
+.nav-scroll-arrow {
+  flex: 0 0 32px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 0; position: relative; z-index: 2;
+  border: 1px solid var(--beige-dark); border-radius: 50%;
+  color: var(--teal); background: var(--white);
+  cursor: pointer;
+  transition: var(--tr);
+}
+.nav-scroll-arrow svg { display: block; width: 14px; height: 14px; }
+.nav-scroll-arrow:hover:not(:disabled) { background: var(--primary-light); border-color: var(--primary); }
+.nav-scroll-arrow:disabled { opacity: .35; cursor: default; }
 
 .pill-btn {
   white-space: nowrap;
@@ -859,7 +880,11 @@ body {
 
 <div class="sticky-nav-wrapper">
   <!-- Horizontal Scroll Category Bar for Instant Finding -->
-  <div class="nav-pills-container" id="pillNav"></div>
+  <div class="nav-pills-shell">
+    <button class="nav-scroll-arrow" id="pillNavPrev" type="button" aria-label="Scroll to previous categories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <div class="nav-pills-container" id="pillNav"></div>
+    <button class="nav-scroll-arrow" id="pillNavNext" type="button" aria-label="Scroll to more categories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════
@@ -1533,6 +1558,32 @@ function buildPills(){
     });
     nav.appendChild(btn);
   });
+  setupPillScrollControls();
+}
+
+function setupPillScrollControls(){
+  const nav = document.getElementById('pillNav');
+  const prev = document.getElementById('pillNavPrev');
+  const next = document.getElementById('pillNavNext');
+  if(!nav || !prev || !next) return;
+  const update = () => {
+    prev.disabled = nav.scrollLeft <= 1;
+    next.disabled = nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 1;
+  };
+  if(!nav._scrollControlsBound){
+    const move = direction => {
+      const count = nav.children.length;
+      if(!count) return;
+      const step = Math.max(100, (nav.scrollWidth / count) * 2);
+      nav.scrollBy({left: direction * step, behavior: 'smooth'});
+    };
+    prev.addEventListener('click', () => move(-1));
+    next.addEventListener('click', () => move(1));
+    nav.addEventListener('scroll', update, {passive: true});
+    window.addEventListener('resize', update);
+    nav._scrollControlsBound = true;
+  }
+  requestAnimationFrame(update);
 }
 
 /* ═══════════════════════════════
